@@ -19,6 +19,7 @@ from app.agents.growth_orchestrator_agent.schemas import (
     RouteKind,
 )
 from app.agents.growth_strategist_agent import GrowthStrategistAgent, StrategistQuestion
+from app.observability import observation
 
 
 class GrowthOrchestratorAgent:
@@ -41,6 +42,39 @@ class GrowthOrchestratorAgent:
     ) -> OrchestratorResponse:
         payload = self._normalize(question)
         route = classify_route(payload.question)
+
+        with observation(
+            self.name,
+            as_type="span",
+            input={"question": payload.question},
+            metadata={"days": payload.days, "channel": payload.channel, "route": route.value},
+            tags=["orchestrator", route.value],
+        ) as root:
+            response = self._run_routed(session, payload, route)
+            root.update(
+                output={
+                    "route": response.route.value,
+                    "agents_called": response.agents_called,
+                    "summary": response.summary,
+                    "insufficient_evidence": response.insufficient_evidence,
+                }
+            )
+            try:
+                root.update_trace(
+                    name=self.name,
+                    tags=["orchestrator", route.value],
+                    metadata={"route": route.value},
+                )
+            except Exception:  # noqa: BLE001
+                pass
+            return response
+
+    def _run_routed(
+        self,
+        session: Session,
+        payload: OrchestratorQuestion,
+        route: RouteKind,
+    ) -> OrchestratorResponse:
         agents_called: list[str] = []
 
         if route == RouteKind.EXPERIMENT:

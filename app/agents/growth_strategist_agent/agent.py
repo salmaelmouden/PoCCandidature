@@ -21,6 +21,7 @@ from app.agents.growth_strategist_agent.schemas import (
     StrategyReport,
 )
 from app.agents.growth_strategist_agent.tools import tool_get_analyst_report
+from app.observability import observation
 
 
 class GrowthStrategistAgent:
@@ -39,6 +40,23 @@ class GrowthStrategistAgent:
         self, session: Session, question: StrategistQuestion | str | None = None
     ) -> StrategyReport:
         payload = self._normalize(question)
+        with observation(
+            self.name,
+            input={"question": payload.question},
+            metadata={"days": payload.days, "channel": payload.channel},
+            tags=["strategist"],
+        ) as span:
+            report = self._run_inner(session, payload)
+            span.update(
+                output={
+                    "recommendation_count": len(report.recommendations),
+                    "insufficient_evidence": report.insufficient_evidence,
+                    "analyst_primary_driver": report.analyst_primary_driver,
+                }
+            )
+            return report
+
+    def _run_inner(self, session: Session, payload: StrategistQuestion) -> StrategyReport:
         tool_calls: list[ToolInvocation] = []
 
         if payload.analyst_report is not None:

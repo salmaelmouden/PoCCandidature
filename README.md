@@ -6,13 +6,15 @@ AI-native growth analytics, decision support, and automation for content-driven 
 
 ## Current status
 
-**Phase 7 — Experimentation** on branch `phase-7-experimentation`.
+**Phase 8 — Langfuse observability** on branch `phase-8-langfuse`.
 
 ```bash
 make install   # once (venv is mounted into app containers)
+pip install '.[observability]'   # optional, for Langfuse SDK
 make up
 make status
-# open http://localhost:8501 → Orchestrator or Experiments
+# open http://localhost:8501 → Orchestrator
+# optional: set LANGFUSE_* in .env — see docs/guides/langfuse.md
 ```
 
 | Container | Role | Expected state |
@@ -174,3 +176,10 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
 - [x] `growth_experiment_analyst_agent` (analyze + propose)
 - [x] Orchestrator experiment route + Experiments page
 - [x] Skill / agent unit tests
+
+### Phase 8
+
+- [x] Optional Langfuse tracing (`app/observability`) — no-op without keys
+- [x] Orchestrator / agents / analyst tools instrumented
+- [x] Sanitize secrets; Streamlit `flush_tracing`
+- [x] Guide: `docs/guides/langfuse.md`

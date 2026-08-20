@@ -27,6 +27,7 @@ from app.agents.growth_data_analyst_agent.tools import (
     tool_get_funnel_compare,
     tool_get_overview,
 )
+from app.observability import observation
 from app.services.dashboard import resolve_period
 
 
@@ -45,6 +46,28 @@ class GrowthDataAnalystAgent:
     def run(self, session: Session, question: AnalystQuestion | str | None = None) -> AnalystReport:
         payload = self._normalize_question(question)
         intent = classify_intent(payload.question)
+        with observation(
+            self.name,
+            input={"question": payload.question},
+            metadata={"intent": intent.value, "days": payload.days, "channel": payload.channel},
+            tags=["analyst", intent.value],
+        ) as span:
+            report = self._run_with_intent(session, payload, intent)
+            span.update(
+                output={
+                    "primary_driver": report.primary_driver,
+                    "insufficient_evidence": report.insufficient_evidence,
+                    "tool_count": len(report.tool_calls),
+                }
+            )
+            return report
+
+    def _run_with_intent(
+        self,
+        session: Session,
+        payload: AnalystQuestion,
+        intent: AnalystIntent,
+    ) -> AnalystReport:
         period = resolve_period(payload.days, as_of=payload.as_of)
         tool_calls: list[ToolInvocation] = []
 
@@ -65,7 +88,15 @@ class GrowthDataAnalystAgent:
 
         results: dict[str, dict[str, Any] | None] = {}
         for name in tools_for_intent(intent):
-            results[name] = self._safe_tool(tool_calls, name, runners[name])
+            with observation(
+                f"tool:{name}",
+                as_type="span",
+                input={"tool": name},
+                metadata={"agent": self.name},
+                tags=["tool", name],
+            ) as tool_span:
+                results[name] = self._safe_tool(tool_calls, name, runners[name])
+                tool_span.update(output={"ok": results[name] is not None})
 
         claims, primary_driver, insufficient = self._synthesize(
             question=payload.question,

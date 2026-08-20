@@ -11,8 +11,8 @@ Do not implement later phases until the current phase is approved.
 | 4 | Dashboard (overview, acquisition, content, funnel) | Done |
 | 5 | Data Analyst agent | Done |
 | 6 | Strategist + Orchestrator | Done |
-| 7 | Experimentation skill + agent | **Done (awaiting push)** |
-| 8 | Langfuse observability | Not started |
+| 7 | Experimentation skill + agent | Done |
+| 8 | Langfuse observability | **Done (awaiting push)** |
 | 9 | n8n + report generation | Not started |
 | 10 | Evaluation + polish | Not started |
 

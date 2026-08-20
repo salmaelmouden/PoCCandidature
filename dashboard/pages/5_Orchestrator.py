@@ -8,6 +8,7 @@ from app.agents.growth_orchestrator_agent import GrowthOrchestratorAgent, Orches
 from app.agents.growth_orchestrator_agent.prompts import DEFAULT_ORCHESTRATOR_QUESTION
 from dashboard.db import db_session
 from dashboard.ui import data_provenance_banner, page_header, sidebar_filters
+from app.observability import flush_tracing
 
 EXAMPLE_QUESTIONS = [
     DEFAULT_ORCHESTRATOR_QUESTION,
@@ -42,6 +43,7 @@ if run:
             session,
             OrchestratorQuestion(question=question, days=days, channel=channel),
         )
+    flush_tracing()
 
     labels: set[str] = set()
     has_synthetic = False

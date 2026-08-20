@@ -34,6 +34,9 @@ services:
       APP_ENV: development
       LOG_LEVEL: INFO
       PYTHONPATH: /app:/opt/venv/lib/python3.12/site-packages
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-https://cloud.langfuse.com}
     volumes:
       - ./:/app
       - ./.venv:/opt/venv:ro
