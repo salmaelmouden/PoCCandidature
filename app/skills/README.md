@@ -1,14 +1,14 @@
-# Runtime skills (Phase 2–3, 7, 9)
+# Runtime skills (Phase 2+)
 
-Reserved directories only — **no skill implementation in Phase 0**.
+Implemented:
 
-| Directory | Skill |
-|-----------|--------|
-| `youtube_ingestion/` | YouTube API ingestion |
-| `funnel_analysis/` | Funnel metrics |
-| `content_analysis/` | Content value & ranking |
-| `anomaly_detection/` | Deterministic anomalies |
-| `experiment_analysis/` | Experiment statistics |
-| `report_generation/` | Weekly growth report |
+| Skill | Status |
+|-------|--------|
+| `funnel_analysis` | Phase 2 |
+| `content_analysis` | Phase 2 |
+| `anomaly_detection` | Phase 2 |
+| `youtube_ingestion` | Phase 3 |
+| `experiment_analysis` | Phase 7 |
+| `report_generation` | Phase 9 |
 
-Contracts: `docs/templates/skill-contract.md` · Taxonomy: `docs/skills/taxonomy.md`
+Skills are deterministic Python modules with Pydantic schemas. They do not access Streamlit or call LLMs.
