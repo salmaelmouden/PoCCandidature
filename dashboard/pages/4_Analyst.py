@@ -9,14 +9,32 @@ from app.agents.growth_data_analyst_agent.prompts import DEFAULT_PREMIUM_QUESTIO
 from dashboard.db import db_session
 from dashboard.ui import data_provenance_banner, page_header, sidebar_filters
 
+EXAMPLE_QUESTIONS = [
+    DEFAULT_PREMIUM_QUESTION,
+    "Where is the funnel bottleneck right now?",
+    "Which channel is leaking the most at Premium?",
+    "Which topics have high reach but low conversion?",
+    "What changed in the funnel vs the previous period?",
+    "Any traffic anomalies this period?",
+]
+
 st.set_page_config(page_title="Analyst · Growth Intelligence AI", layout="wide")
 page_header(
     "Data analyst",
-    "Structured evidence for “what is happening?” — tools only, no invented metrics.",
+    "Structured evidence for “what is happening?” — tools are chosen from your question.",
 )
 
 days, channel = sidebar_filters()
-question = st.text_area("Question", value=DEFAULT_PREMIUM_QUESTION, height=80)
+if "analyst_question" not in st.session_state:
+    st.session_state.analyst_question = DEFAULT_PREMIUM_QUESTION
+
+st.caption("Examples")
+cols = st.columns(2)
+for idx, example in enumerate(EXAMPLE_QUESTIONS):
+    if cols[idx % 2].button(example, key=f"ex_{idx}"):
+        st.session_state.analyst_question = example
+
+question = st.text_area("Question", key="analyst_question", height=80)
 run = st.button("Run analyst", type="primary")
 
 if run:
@@ -44,8 +62,7 @@ if run:
 
     st.subheader("Claims")
     for claim in report.claims:
-        badge = claim.label.value
-        st.markdown(f"**{badge}** — {claim.text}")
+        st.markdown(f"**{claim.label.value}** — {claim.text}")
         if claim.source_tool:
             st.caption(f"source tool: `{claim.source_tool}`")
         if claim.numbers:
@@ -53,12 +70,12 @@ if run:
 
     st.subheader("Tool calls")
     st.dataframe(
-        [
-            {"tool": t.tool, "ok": t.ok, "summary": t.summary}
-            for t in report.tool_calls
-        ],
+        [{"tool": t.tool, "ok": t.ok, "summary": t.summary} for t in report.tool_calls],
         use_container_width=True,
         hide_index=True,
     )
 else:
-    st.info("Set filters, then run the analyst. Recommendations are out of scope (Phase 6 strategist).")
+    st.info(
+        "Pick an example or type a question, then run. "
+        "Different intents use different tools (bottleneck ≠ content ≠ anomalies)."
+    )

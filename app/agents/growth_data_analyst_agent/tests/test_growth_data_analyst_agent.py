@@ -5,13 +5,13 @@ from __future__ import annotations
 from datetime import date
 
 from app.agents.growth_data_analyst_agent import AnalystQuestion, GrowthDataAnalystAgent
+from app.agents.growth_data_analyst_agent.routing import AnalystIntent, classify_intent
 from app.agents.growth_data_analyst_agent.schemas import SemanticLabel
 from app.db.repositories import AcquisitionRepository
 
 
 def _seed_premium_drop(session) -> None:
     repo = AcquisitionRepository(session)
-    # as_of=2026-08-20, days=7 → current 2026-08-14..20 ; previous 2026-08-07..13
     repo.upsert(
         metric_date=date(2026, 8, 18),
         channel="YouTube",
@@ -59,6 +59,15 @@ def _seed_premium_drop(session) -> None:
     session.commit()
 
 
+def test_classify_intent() -> None:
+    assert classify_intent("Why did Premium conversion decrease?") == AnalystIntent.PREMIUM
+    assert classify_intent("Where is the funnel bottleneck?") == AnalystIntent.BOTTLENECK
+    assert classify_intent("Which channel performs worst?") == AnalystIntent.CHANNEL
+    assert classify_intent("Which topics have high reach but low conversion?") == AnalystIntent.CONTENT
+    assert classify_intent("Any traffic anomalies?") == AnalystIntent.ANOMALY
+    assert classify_intent("What changed vs last period?") == AnalystIntent.PERIOD_CHANGE
+
+
 def test_analyst_answers_premium_drop_with_facts(session) -> None:
     _seed_premium_drop(session)
     agent = GrowthDataAnalystAgent()
@@ -81,10 +90,36 @@ def test_analyst_answers_premium_drop_with_facts(session) -> None:
     assert "YouTube" in (report.primary_driver or "")
 
 
-def test_analyst_default_question(session) -> None:
+def test_different_questions_use_different_tools_and_answers(session) -> None:
     _seed_premium_drop(session)
-    report = GrowthDataAnalystAgent().run(
-        session, AnalystQuestion(question="What changed?", days=7, as_of=date(2026, 8, 20))
+    agent = GrowthDataAnalystAgent()
+    as_of = date(2026, 8, 20)
+    bottleneck = agent.run(
+        session,
+        AnalystQuestion(question="Where is the funnel bottleneck?", days=7, as_of=as_of),
     )
-    assert report.question == "What changed?"
-    assert report.tool_calls
+    content = agent.run(
+        session,
+        AnalystQuestion(
+            question="Which topics have high reach but low conversion?",
+            days=7,
+            as_of=as_of,
+        ),
+    )
+    anomaly = agent.run(
+        session,
+        AnalystQuestion(question="Any traffic anomalies this period?", days=7, as_of=as_of),
+    )
+
+    assert {t.tool for t in bottleneck.tool_calls} == {"get_overview", "get_funnel_compare"}
+    assert "get_content_gaps" in {t.tool for t in content.tool_calls}
+    assert "get_funnel_compare" not in {t.tool for t in content.tool_calls}
+    assert {t.tool for t in anomaly.tool_calls} == {"get_overview"}
+
+    assert bottleneck.primary_driver != content.primary_driver
+    assert "bottleneck" in (bottleneck.primary_driver or "")
+    assert "content gap" in (content.primary_driver or "") or "topic=" in (
+        content.primary_driver or ""
+    )
+    assert anomaly.claims[-1].label == SemanticLabel.INTERPRETATION
+    assert "anomal" in anomaly.claims[-1].text.lower() or "No traffic" in anomaly.claims[-1].text
