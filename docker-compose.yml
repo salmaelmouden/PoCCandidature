@@ -149,11 +149,18 @@ services:
       start_period: 25s
     networks: [gia]
 
-  # Visual n8n editor — optional (corporate Docker Hub TLS often blocks this pull).
-  # Start with: make up-n8n   (after the image is available locally)
+  # Visual n8n editor — optional profile.
+  # Prefer local build (make n8n-build) when Docker Hub is blocked by corporate TLS.
   n8n:
     profiles: ["n8n"]
-    image: ${N8N_IMAGE:-n8nio/n8n:1.106.3}
+    image: ${N8N_IMAGE:-gia-n8n:local}
+    build:
+      context: ./docker/n8n
+      dockerfile: Dockerfile
+      args:
+        HTTP_PROXY: ${HTTP_PROXY:-http://fproxy.havre-port.lan:8080}
+        HTTPS_PROXY: ${HTTPS_PROXY:-http://fproxy.havre-port.lan:8080}
+        NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1}
     container_name: gia-n8n
     ports:
       - "5678:5678"
@@ -174,6 +181,8 @@ services:
       api:
         condition: service_healthy
     networks: [gia]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 networks:
   gia:

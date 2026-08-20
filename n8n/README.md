@@ -1,79 +1,49 @@
 # n8n — visual automation (Phase 9)
 
-n8n runs with a **full visual editor**. On many corporate networks, Docker Hub pulls fail (TLS proxy EOF), so n8n is an **optional Compose profile**.
+Corporate Docker Hub pulls often fail (TLS proxy EOF). **Solution:** build a local
+n8n image from your already-cached `node:20-slim` and install n8n via **npm**
+(npm works with `NODE_EXTRA_CA_CERTS`).
+
+## Quick start (recommended on this laptop)
+
+```bash
+make up                 # api + dashboard + postgres
+make n8n-build          # builds gia-n8n:local (uses ~/certs/full-bundle.pem)
+make up-n8n             # http://localhost:5678
+make n8n-import         # load Weekly Growth Report canvas
+```
+
+Override proxy/CA if needed:
+
+```bash
+make n8n-build CORP_CA=$HOME/certs/haropa-proxy-bundle.pem \
+  HTTP_PROXY=http://fproxy.havre-port.lan:8080 \
+  HTTPS_PROXY=http://fproxy.havre-port.lan:8080
+```
 
 ## URLs
 
-| Service | URL | How |
-|---------|-----|-----|
-| Streamlit | http://localhost:8501 | `make up` |
-| API docs | http://localhost:8000/docs | `make up` |
-| **n8n UI (visual)** | http://localhost:5678 | `make up-n8n` (needs local image) |
+| Service | URL |
+|---------|-----|
+| Streamlit | http://localhost:8501 |
+| API docs | http://localhost:8000/docs |
+| **n8n UI** | http://localhost:5678 |
 
-## Start core stack (works without Docker Hub for n8n)
+## What `n8n-build` does
 
-```bash
-make up
-make status
-```
+1. Copies corporate CA → `docker/n8n/certs/full-bundle.pem`
+2. `docker build` **FROM node:20-slim** (already on your machine — no Hub pull for base)
+3. `npm install n8n@1.106.3` inside the image (npm registry + CA)
+4. Tags `gia-n8n:local`
 
-Weekly reports still work via API / CLI:
+## Workflow
 
-```bash
-curl -X POST "http://localhost:8000/api/reports/weekly?days=7"
-# or
-make report
-```
+Import `n8n/workflows/weekly_growth_report.json` (or `make n8n-import`).
 
-## Start n8n visual UI
+Canvas: Manual / Monday schedule → HTTP `http://gia-api:8000/api/reports/weekly` → Format.
 
-```bash
-make up-n8n
-make n8n-import
-# open http://localhost:5678
-```
+## Fallback if build fails
 
-### If `docker pull` fails (your case)
-
-Error looks like: `TLS connect to fproxy...:8080: EOF` when resolving `n8nio/n8n`.
-
-**Option A — load image from another machine / personal hotspot**
-
-On a network that can reach Docker Hub:
-
-```bash
-docker pull n8nio/n8n:1.106.3
-docker save n8nio/n8n:1.106.3 -o n8n-1.106.3.tar
-```
-
-Copy the tar to this laptop, then:
-
-```bash
-docker load -i n8n-1.106.3.tar
-make up-n8n
-make n8n-import
-```
-
-**Option B — override image** if IT mirrors n8n elsewhere:
-
-```bash
-export N8N_IMAGE=your-registry.example.com/n8nio/n8n:1.106.3
-make up-n8n
-```
-
-## Import the canvas workflow
-
-1. Open http://localhost:5678 → create owner account  
-2. Or: `make n8n-import`  
-3. Open **Weekly Growth Report** — sticky notes + Manual/Schedule → HTTP → Format  
-4. **Execute workflow** (Manual Trigger)
-
-## What the workflow does
-
-```text
-Manual Trigger ─┐
-                ├─→ HTTP POST gia-api:/api/reports/weekly → Format fields
-Schedule Mon 9 ─┘
-```
-
-Inside Docker, n8n calls `http://gia-api:8000`. From the host, use `http://localhost:8000`.
+- Ask IT for a mirrored n8n image, or  
+- On another network: `docker pull n8nio/n8n:1.106.3 && docker save ...` then  
+  `docker load` and `N8N_IMAGE=n8nio/n8n:1.106.3 make up-n8n`

@@ -49,3 +49,7 @@ service-account*.json
 # Generated reports (keep directory)
 reports/*.md
 !reports/.gitkeep
+
+# Local n8n build artifacts / failed host installs
+.n8n-runtime/
+docker/n8n/certs/*.pem

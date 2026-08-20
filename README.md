@@ -14,7 +14,7 @@ make up        # core stack (n8n optional — corporate Docker Hub often blocked
 make status
 # Dashboard: http://localhost:8501
 # API docs:  http://localhost:8000/docs
-# n8n UI:    make up-n8n after loading the image (see n8n/README.md)
+# n8n UI:    make n8n-build && make up-n8n  (local image; Docker Hub blocked)
 ```
 
 | Container | Role | Expected state |
