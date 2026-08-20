@@ -18,13 +18,14 @@ Phase discipline: do not implement later-phase application code until the curren
 ## Project commands
 
 ```bash
-make install   # pip install -e ".[dev]"
-make up        # docker compose up -d (Postgres)
-make down      # docker compose down
-make migrate   # alembic upgrade head
-make seed      # labelled synthetic data (idempotent)
-make test      # pytest -q
-make lint      # ruff check app tests scripts
+make install         # pip install -e ".[dev]"
+make up              # docker compose up -d (Postgres)
+make down            # docker compose down
+make migrate         # alembic upgrade head
+make seed            # labelled synthetic data (idempotent)
+make ingest-youtube  # YouTube Data API ingest (needs API key)
+make test            # pytest -q
+make lint            # ruff check app tests scripts
 ```
 
 ## Hard stops
