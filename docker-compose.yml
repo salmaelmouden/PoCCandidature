@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: growth
       POSTGRES_PASSWORD: growth
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - gia_pgdata:/var/lib/postgresql/data
     healthcheck:
