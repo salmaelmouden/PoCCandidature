@@ -6,9 +6,20 @@ AI-native growth analytics, decision support, and automation for content-driven 
 
 ## Current status
 
-**Phase 0 — Engineering foundation** (no application runtime yet).
+**Phase 1 — Data foundation** (Postgres models, repositories, synthetic seed).
 
-Approved next step after Phase 0: **Phase 1 — Data foundation**.
+## Quick start (Phase 1)
+
+```bash
+cp .env.example .env
+make install
+make up
+make migrate
+make seed
+make test
+```
+
+Synthetic seed is idempotent and clearly labelled (`synthetic_v1`).
 
 ## Architecture (target)
 
@@ -37,25 +48,24 @@ Layers: Presentation → API/Dashboard → Application → Agents → Skills →
 ```text
 .cursor/rules/          # Cursor project rules
 .cursor/skills/         # AI-assisted development skills
-app/                    # Runtime application (Phase 1+)
+app/db/                 # Models, repositories, synthetic loader
+alembic/                # Migrations
 dashboard/              # Streamlit (Phase 4+)
 evaluation/             # Agent evaluation structure
 n8n/workflows/          # Automation (Phase 9+)
 docs/                   # Architecture, conventions, ADRs
-tests/                  # Cross-cutting tests
-scripts/                # Ops / seed scripts (Phase 1+)
+tests/                  # Tests
+scripts/                # Seed / ops scripts
 ```
 
 ## Engineering system
 
 - Constitution & rules: `.cursor/rules/`
 - Dev skills: `.cursor/skills/`
+- Data model: `docs/architecture/data-model.md`
 - Naming: `docs/conventions/naming.md`
 - Architecture: `docs/architecture/overview.md`
-- Agent taxonomy: `docs/agents/taxonomy.md`
-- Skill taxonomy: `docs/skills/taxonomy.md`
 - ADRs: `docs/decisions/`
-- Contracts: `docs/templates/`
 
 ## Product questions
 
@@ -66,23 +76,26 @@ scripts/                # Ops / seed scripts (Phase 1+)
 5. What should we do? What experiment should we run?
 6. Can analysis be automated?
 
-## Tech stack (planned)
+## Tech stack
 
-Python 3.12+ · FastAPI · PostgreSQL · SQLAlchemy · Pydantic · Pandas/NumPy/SciPy · pytest · Streamlit · n8n · Langfuse · Docker Compose
+Python 3.12+ · PostgreSQL · SQLAlchemy · Alembic · Pydantic · pytest · Docker Compose  
+(FastAPI, Streamlit, n8n, Langfuse in later phases)
 
 ## Development workflow
 
-Plan → critic → test-writer → implement. See `AGENTS.md` and `docs/architecture/development.md`.
+Plan → critic → test-writer → implement. See `AGENTS.md`.
 
-## Phase 0 definition of done
+## Definition of done (so far)
 
-- [x] Cursor rules
-- [x] Development skills
-- [x] Naming / architecture / agent / skill conventions
-- [x] Contract templates
-- [x] ADR structure + initial ADRs
-- [x] Evaluation structure
-- [x] Documentation skeleton
-- [x] README architecture section
+### Phase 0
 
-Application checkboxes (Postgres, agents, dashboard, …) start in later phases.
+- [x] Cursor rules & development skills
+- [x] Conventions, contracts, ADRs, evaluation structure
+
+### Phase 1
+
+- [x] Docker Compose Postgres
+- [x] SQLAlchemy models + Alembic migration
+- [x] Repository layer
+- [x] Labelled synthetic generator + idempotent seed
+- [x] Unit tests for generator + repositories

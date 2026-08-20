@@ -1,7 +1,7 @@
 # Application package
 
-Runtime application code starts in **Phase 1**.
+Phase 1 delivers the **data foundation** under `app/db/`.
 
-Planned modules: `api/`, `config/`, `db/`, `ingestion/`, `analytics/`, `agents/`, `skills/`, `schemas/`.
+Later phases add: `api/`, `analytics/`, `agents/`, `skills/`, dashboard adapters.
 
-Do not add business logic here until Phase 1 is approved.
+Rule: business logic stays out of UI; agents use skills/repositories only.
