@@ -48,6 +48,7 @@ class Video(Base):
 
     daily_metrics: Mapped[list["VideoDailyMetric"]] = relationship(back_populates="video")
     acquisitions: Mapped[list["Acquisition"]] = relationship(back_populates="video")
+    classifications: Mapped[list["VideoClassification"]] = relationship(back_populates="video")
 
 
 class VideoDailyMetric(Base):
@@ -72,6 +73,37 @@ class VideoDailyMetric(Base):
     )
 
     video: Mapped[Video] = relationship(back_populates="daily_metrics")
+
+
+class VideoClassification(Base):
+    """
+    LLM-assigned editorial labels for a video.
+
+    Kept out of `videos.topic` on purpose: the keyword topic stays as-is, and the
+    classification is versioned so a taxonomy change re-runs cleanly instead of
+    overwriting history. See ADR-008.
+    """
+
+    __tablename__ = "video_classifications"
+    __table_args__ = (
+        UniqueConstraint("video_id", "version", name="uq_video_classifications_video_version"),
+        Index("ix_video_classifications_topic", "topic"),
+        Index("ix_video_classifications_hook", "hook_type"),
+    )
+
+    id: Mapped[Any] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    video_id: Mapped[Any] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("videos.id", ondelete="CASCADE"), nullable=False
+    )
+    topic: Mapped[str] = mapped_column(String(64), nullable=False)
+    hook_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    version: Mapped[str] = mapped_column(String(16), nullable=False)
+    classified_by: Mapped[str] = mapped_column(String(64), nullable=False)
+    classified_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    video: Mapped[Video] = relationship(back_populates="classifications")
 
 
 class Acquisition(Base):

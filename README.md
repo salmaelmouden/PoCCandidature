@@ -2,11 +2,15 @@
 
 AI-native growth analytics, decision support, and automation for content-driven acquisition.
 
-> Independent portfolio project. **Hybrid data:** labelled synthetic funnel metrics + optional real public YouTube Data API ingest. Not affiliated with Finary; no private APIs, logos, or proprietary datasets.
+> Independent portfolio project, **not affiliated with Finary**. **Hybrid data:** labelled
+> synthetic funnel metrics + real **public** YouTube catalogue metadata via the official
+> Data API (read-only). No private APIs, no internal analytics, no logos, no proprietary
+> datasets. Public view/like/comment counts only — signups and conversion are not observable
+> from outside a channel and are never inferred.
 
 ## Current status
 
-**Phase 10 — Evaluation + polish** on branch `phase-10-evaluation-polish` (MVP complete).
+**Phase 11 — LLM content classification** on branch `phase-11-content-classification`.
 
 ```bash
 make install   # once (venv is mounted into app containers)
@@ -201,3 +205,14 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
 - [x] Pinned synthetic fixtures for CI
 - [x] Interview demo script (`docs/guides/demo-script.md`)
 - [x] Docs / phases polish (MVP complete)
+
+### Phase 11
+
+- [x] Real Finary public catalogue ingested (952 videos, 2021→2026)
+- [x] `content_classification` skill — `topic` + `hook_type` via `claude-opus-5`,
+      deterministic keyword fallback when no key is set
+- [x] Versioned `video_classifications` table (migration `002`)
+- [x] `make classify` + `scripts/classify_content.py`
+- [x] ADR-008 — where an LLM may write to the database (amends ADR-002)
+- [x] Fixes: API key no longer logged, blank `.env` placeholders no longer override
+      defaults, corporate TLS interception configurable (`CA_BUNDLE_PATH`)

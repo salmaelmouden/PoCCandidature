@@ -17,6 +17,7 @@ from app.db.models import (
     ExperimentResult,
     User,
     Video,
+    VideoClassification,
     VideoDailyMetric,
 )
 
@@ -50,6 +51,13 @@ class VideoRepository:
     def list_all(self) -> Sequence[Video]:
         return self._session.scalars(select(Video).order_by(Video.published_at)).all()
 
+    def list_by_dataset_label(self, dataset_label: str) -> Sequence[Video]:
+        return self._session.scalars(
+            select(Video)
+            .where(Video.dataset_label == dataset_label)
+            .order_by(Video.published_at)
+        ).all()
+
 
 class VideoDailyMetricRepository:
     def __init__(self, session: Session) -> None:
@@ -71,6 +79,54 @@ class VideoDailyMetricRepository:
             setattr(existing, key, value)
         self._session.flush()
         return existing
+
+
+class VideoClassificationRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def upsert(
+        self,
+        *,
+        video_id: UUID,
+        topic: str,
+        hook_type: str,
+        version: str,
+        classified_by: str,
+    ) -> VideoClassification:
+        existing = self._session.scalar(
+            select(VideoClassification).where(
+                VideoClassification.video_id == video_id,
+                VideoClassification.version == version,
+            )
+        )
+        if existing is None:
+            row = VideoClassification(
+                video_id=video_id,
+                topic=topic,
+                hook_type=hook_type,
+                version=version,
+                classified_by=classified_by,
+            )
+            self._session.add(row)
+            self._session.flush()
+            return row
+        existing.topic = topic
+        existing.hook_type = hook_type
+        existing.classified_by = classified_by
+        self._session.flush()
+        return existing
+
+    def classified_video_ids(self, version: str) -> set[UUID]:
+        rows = self._session.scalars(
+            select(VideoClassification.video_id).where(VideoClassification.version == version)
+        ).all()
+        return set(rows)
+
+    def list_by_version(self, version: str) -> Sequence[VideoClassification]:
+        return self._session.scalars(
+            select(VideoClassification).where(VideoClassification.version == version)
+        ).all()
 
 
 class AcquisitionRepository:
