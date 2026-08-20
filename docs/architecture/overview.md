@@ -1,6 +1,6 @@
 # Architecture Overview
 
-**Status:** Phase 0 — engineering foundation (no runtime implementation yet)
+**Status:** Phase 1 — data foundation (models, repositories, synthetic seed)
 
 ## Product loop
 
@@ -51,9 +51,11 @@ YouTube API → youtube_ingestion → PostgreSQL
 
 See `.cursor/rules/02-architecture.mdc`.
 
-## Planned tables (Phase 1+)
+## Planned tables (Phase 1)
 
-`videos`, `video_daily_metrics`, `acquisition`, `users`, `experiments`, `experiment_results`, `analytics_snapshots`
+Implemented: `videos`, `video_daily_metrics`, `acquisition`, `users`, `experiments`, `experiment_results`, `analytics_snapshots`.
+
+See [data-model.md](data-model.md).
 
 ## Synthetic data policy
 

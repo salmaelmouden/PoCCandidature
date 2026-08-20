@@ -4,8 +4,8 @@ Do not implement later phases until the current phase is approved.
 
 | Phase | Name | Status |
 |-------|------|--------|
-| 0 | Engineering foundation | **In progress / awaiting approval** |
-| 1 | Data foundation (Postgres, models, synthetic data) | Not started |
+| 0 | Engineering foundation | Done |
+| 1 | Data foundation (Postgres, models, synthetic data) | **In progress / awaiting approval** |
 | 2 | Analytics skills (funnel, content, anomaly) | Not started |
 | 3 | YouTube ingestion | Not started |
 | 4 | Dashboard (overview, acquisition, content, funnel) | Not started |

@@ -15,17 +15,17 @@ Default delivery cycle:
 
 Phase discipline: do not implement later-phase application code until the current phase is approved.
 
-## Project commands (Phase 1+)
+## Project commands
 
 ```bash
-# tests
-make test
-
-# lint / typecheck
-make lint
+make install   # pip install -e ".[dev]"
+make up        # docker compose up -d (Postgres)
+make down      # docker compose down
+make migrate   # alembic upgrade head
+make seed      # labelled synthetic data (idempotent)
+make test      # pytest -q
+make lint      # ruff check app tests scripts
 ```
-
-Until the Makefile targets exist, do not invent alternatives — ask.
 
 ## Hard stops
 

@@ -3,6 +3,7 @@
 | Area | Path |
 |------|------|
 | Architecture overview | [architecture/overview.md](architecture/overview.md) |
+| Data model | [architecture/data-model.md](architecture/data-model.md) |
 | Development system | [architecture/development.md](architecture/development.md) |
 | Phases | [architecture/phases.md](architecture/phases.md) |
 | Agent taxonomy | [agents/taxonomy.md](agents/taxonomy.md) |

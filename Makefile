@@ -1,12 +1,33 @@
-# Growth Intelligence AI — placeholders until Phase 1+
-.PHONY: help test lint
+# Growth Intelligence AI
+.PHONY: help install up down migrate seed test lint
 
 help:
-	@echo "Phase 0: engineering foundation only."
-	@echo "Phase 1+ targets (test, lint, up) will be added with the data foundation."
+	@echo "Targets:"
+	@echo "  make install  - install package + dev deps"
+	@echo "  make up       - start Postgres (Docker Compose)"
+	@echo "  make down     - stop Postgres"
+	@echo "  make migrate  - run Alembic migrations"
+	@echo "  make seed     - load labelled synthetic data (idempotent)"
+	@echo "  make test     - run pytest"
+	@echo "  make lint     - run ruff"
+
+install:
+	python -m pip install -e ".[dev]"
+
+up:
+	docker compose up -d
+
+down:
+	docker compose down
+
+migrate:
+	alembic upgrade head
+
+seed:
+	python scripts/seed_synthetic_data.py
 
 test:
-	@echo "Not configured yet (Phase 1+). See AGENTS.md."
+	pytest -q
 
 lint:
-	@echo "Not configured yet (Phase 1+). See AGENTS.md."
+	ruff check app tests scripts
