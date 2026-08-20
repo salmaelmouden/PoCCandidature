@@ -209,6 +209,26 @@ class ExperimentRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
 
+    def get_by_key(self, experiment_key: str) -> Experiment | None:
+        return self._session.scalar(
+            select(Experiment).where(Experiment.experiment_key == experiment_key)
+        )
+
+    def list_experiments(self, *, status: str | None = None) -> list[Experiment]:
+        stmt = select(Experiment).order_by(Experiment.experiment_key)
+        if status is not None:
+            stmt = stmt.where(Experiment.status == status)
+        return list(self._session.scalars(stmt).all())
+
+    def list_results(self, experiment_id: UUID) -> list[ExperimentResult]:
+        return list(
+            self._session.scalars(
+                select(ExperimentResult)
+                .where(ExperimentResult.experiment_id == experiment_id)
+                .order_by(ExperimentResult.variant)
+            ).all()
+        )
+
     def upsert_experiment(self, **fields: Any) -> Experiment:
         key = fields["experiment_key"]
         existing = self._session.scalar(

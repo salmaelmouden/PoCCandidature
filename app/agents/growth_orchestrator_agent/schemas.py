@@ -8,12 +8,14 @@ from enum import StrEnum
 from pydantic import BaseModel, Field
 
 from app.agents.growth_data_analyst_agent.schemas import AnalystReport, EvidenceClaim
+from app.agents.growth_experiment_analyst_agent.schemas import ExperimentAnalystReport
 from app.agents.growth_strategist_agent.schemas import StrategyReport
 
 
 class RouteKind(StrEnum):
     ANALYST_ONLY = "analyst_only"
     ANALYST_THEN_STRATEGIST = "analyst_then_strategist"
+    EXPERIMENT = "experiment"
 
 
 class OrchestratorQuestion(BaseModel):
@@ -33,6 +35,7 @@ class OrchestratorResponse(BaseModel):
     summary: str
     analyst_report: AnalystReport | None = None
     strategy_report: StrategyReport | None = None
+    experiment_report: ExperimentAnalystReport | None = None
     claims: list[EvidenceClaim] = Field(default_factory=list)
     insufficient_evidence: bool = False
     notes: str = (

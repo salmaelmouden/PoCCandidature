@@ -6,6 +6,10 @@ from sqlalchemy.orm import Session
 
 from app.agents.growth_data_analyst_agent import AnalystQuestion, GrowthDataAnalystAgent
 from app.agents.growth_data_analyst_agent.schemas import EvidenceClaim, SemanticLabel
+from app.agents.growth_experiment_analyst_agent import (
+    ExperimentAnalystQuestion,
+    GrowthExperimentAnalystAgent,
+)
 from app.agents.growth_orchestrator_agent.config import OrchestratorConfig
 from app.agents.growth_orchestrator_agent.prompts import DEFAULT_ORCHESTRATOR_QUESTION
 from app.agents.growth_orchestrator_agent.routing import classify_route
@@ -21,7 +25,7 @@ class GrowthOrchestratorAgent:
     """
     Primary AI entrypoint: classifies route, calls specialists, synthesizes summary.
 
-    Does not reimplement analyst or strategist logic.
+    Does not reimplement analyst, strategist, or experiment logic.
     """
 
     name = "growth_orchestrator_agent"
@@ -30,6 +34,7 @@ class GrowthOrchestratorAgent:
         self.config = config or OrchestratorConfig()
         self._analyst = GrowthDataAnalystAgent()
         self._strategist = GrowthStrategistAgent()
+        self._experiment = GrowthExperimentAnalystAgent()
 
     def run(
         self, session: Session, question: OrchestratorQuestion | str | None = None
@@ -37,6 +42,31 @@ class GrowthOrchestratorAgent:
         payload = self._normalize(question)
         route = classify_route(payload.question)
         agents_called: list[str] = []
+
+        if route == RouteKind.EXPERIMENT:
+            experiment_report = self._experiment.run(
+                session,
+                ExperimentAnalystQuestion(
+                    question=payload.question,
+                    days=payload.days,
+                    channel=payload.channel,
+                    as_of=payload.as_of,
+                ),
+            )
+            agents_called.append(self._experiment.name)
+            summary = self._summarize_experiment(experiment_report)
+            return OrchestratorResponse(
+                question=payload.question,
+                route=route,
+                agents_called=agents_called,
+                period_start=None,
+                period_end=None,
+                channel=payload.channel,
+                summary=summary,
+                experiment_report=experiment_report,
+                claims=list(experiment_report.claims),
+                insufficient_evidence=experiment_report.insufficient_evidence,
+            )
 
         analyst_report = self._analyst.run(
             session,
@@ -107,7 +137,6 @@ class GrowthOrchestratorAgent:
                 numbers={"route": route.value},
             )
         ]
-        # Keep analyst interpretations/facts (cap for UI)
         for c in analyst_report.claims[:6]:
             claims.append(c)
         if strategy_report:
@@ -134,3 +163,15 @@ class GrowthOrchestratorAgent:
             f"[{r.priority.value}] {r.title}" for r in strategy_report.recommendations[:3]
         )
         return f"Driver: {driver}. Recommended next actions: {tops}."
+
+    def _summarize_experiment(self, experiment_report) -> str:
+        if experiment_report.mode.value == "propose" and experiment_report.design:
+            return (
+                f"Experiment proposal: {experiment_report.design.name} "
+                f"(metric={experiment_report.design.primary_metric})."
+            )
+        hint = experiment_report.decision_hint.value if experiment_report.decision_hint else "n/a"
+        return (
+            f"Experiment analysis for {experiment_report.experiment_key or 'unknown'}: "
+            f"decision_hint={hint}."
+        )

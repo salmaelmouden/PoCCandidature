@@ -12,9 +12,9 @@ from dashboard.ui import data_provenance_banner, page_header, sidebar_filters
 EXAMPLE_QUESTIONS = [
     DEFAULT_ORCHESTRATOR_QUESTION,
     "What should we do about the Premium conversion drop?",
+    "Did the YouTube CTA experiment work?",
+    "How should we test the Premium conversion drop?",
     "Where is the funnel bottleneck right now?",
-    "Which topics have high reach but low conversion?",
-    "Recommend next steps to improve Premium conversion",
 ]
 
 st.set_page_config(page_title="Orchestrator · Growth Intelligence AI", layout="wide")
@@ -73,6 +73,14 @@ if run:
             st.write(rec.action)
             st.caption(rec.rationale)
 
+    if resp.experiment_report:
+        st.subheader("Experiment specialist")
+        st.caption(f"mode=`{resp.experiment_report.mode.value}`")
+        if resp.experiment_report.decision_hint:
+            st.write(f"Decision hint: **{resp.experiment_report.decision_hint.value}**")
+        if resp.experiment_report.design:
+            st.write(resp.experiment_report.design.hypothesis)
+
     st.subheader("Claims")
     for claim in resp.claims:
         st.markdown(f"**{claim.label.value}** — {claim.text}")
@@ -100,8 +108,17 @@ if run:
                 use_container_width=True,
                 hide_index=True,
             )
+        if resp.experiment_report:
+            st.write("Experiment tool calls")
+            st.dataframe(
+                [
+                    {"tool": t.tool, "ok": t.ok, "summary": t.summary}
+                    for t in resp.experiment_report.tool_calls
+                ],
+                use_container_width=True,
+                hide_index=True,
+            )
 else:
     st.info(
-        "Ask a diagnostic question (analyst only) or an action question "
-        "(analyst → strategist). Specialist Analyst page remains available for demos."
+        "Diagnostics → analyst; actions → strategist; experiment/A/B → experiment agent."
     )

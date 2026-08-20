@@ -4,6 +4,20 @@ from __future__ import annotations
 
 from app.agents.growth_orchestrator_agent.schemas import RouteKind
 
+_EXPERIMENT_KEYS = (
+    "experiment",
+    "a/b",
+    "ab test",
+    "a-b test",
+    "significance",
+    "how should we test",
+    "how do we test",
+    "design an experiment",
+    "propose an experiment",
+    "control vs treatment",
+    "decision hint",
+)
+
 _STRATEGY_KEYS = (
     "should we",
     "what should",
@@ -39,12 +53,15 @@ _ANALYSIS_KEYS = (
 
 def classify_route(question: str) -> RouteKind:
     """
-    Route diagnostic questions to analyst only; action questions to analyst→strategist.
-
-    Ambiguous questions default to analyst→strategist so the product question
-    “What should we do?” is always reachable from the orchestrator entrypoint.
+    Route experiment questions to the experiment agent; diagnostics to analyst;
+    action questions to analyst→strategist.
     """
     q = question.lower().strip()
+    wants_experiment = any(k in q for k in _EXPERIMENT_KEYS)
+    # Avoid treating generic "should we" strategy as experiment unless experiment-ish
+    if wants_experiment or "how should we test" in q or "how do we test" in q:
+        return RouteKind.EXPERIMENT
+
     wants_strategy = any(k in q for k in _STRATEGY_KEYS)
     wants_analysis = any(k in q for k in _ANALYSIS_KEYS)
 
