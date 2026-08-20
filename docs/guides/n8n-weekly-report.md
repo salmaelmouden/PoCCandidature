@@ -10,16 +10,18 @@ Show interviewers a **visual** automation canvas (not only JSON): schedule → c
 
 - `make install` (venv with FastAPI + uvicorn)
 - Docker
+- **n8n image available locally** if Docker Hub is blocked by corporate TLS proxy  
+  (see [`n8n/README.md`](../../n8n/README.md) — `docker load` workaround)
 
 ## Demo script
 
-1. `make up` → wait until `gia-api`, `gia-n8n`, `gia-dashboard` are running (`make status`)
-2. Open **http://localhost:5678** → create owner user
-3. Import `n8n/workflows/weekly_growth_report.json` (or `make n8n-import`)
-4. Open the workflow — confirm sticky notes and node layout
+1. `make up` → core stack (postgres, api, dashboard) — **does not pull n8n**
+2. Optional: load `n8nio/n8n:1.106.3` then `make up-n8n`
+3. Open **http://localhost:5678** → create owner user
+4. `make n8n-import` (or Import from File → `n8n/workflows/weekly_growth_report.json`)
 5. **Execute workflow**
-6. Inspect output markdown; optional check `reports/*.md` on disk
-7. Optional: open http://localhost:8000/docs and try `POST /api/reports/weekly`
+6. Inspect markdown; check `reports/*.md`
+7. Without n8n: `make report` or http://localhost:8000/docs
 
 ## Disable schedule in demos
 

@@ -10,12 +10,11 @@ AI-native growth analytics, decision support, and automation for content-driven 
 
 ```bash
 make install   # once (venv is mounted into app containers)
-make up
+make up        # core stack (n8n optional — corporate Docker Hub often blocked)
 make status
 # Dashboard: http://localhost:8501
 # API docs:  http://localhost:8000/docs
-# n8n UI:    http://localhost:5678   ← visual editor
-make n8n-import   # import weekly canvas workflow
+# n8n UI:    make up-n8n after loading the image (see n8n/README.md)
 ```
 
 | Container | Role | Expected state |
@@ -25,7 +24,7 @@ make n8n-import   # import weekly canvas workflow
 | `gia-seed` | Synthetic seed | **exited (0)** after seed |
 | `gia-api` | FastAPI reports | **running** → http://localhost:8000 |
 | `gia-dashboard` | Streamlit | **running** → http://localhost:8501 |
-| `gia-n8n` | n8n visual editor | **running** → http://localhost:5678 |
+| `gia-n8n` | n8n visual editor | **optional** (`make up-n8n`) → http://localhost:5678 |
 
 App containers mount the project + `.venv` (no pip install inside Docker — avoids TLS/PyPI issues).
 
