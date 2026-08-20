@@ -1,6 +1,6 @@
 # Architecture Overview
 
-**Status:** Phase 4 — Streamlit dashboard
+**Status:** Phase 5 — Data Analyst agent
 
 ## Product loop
 
