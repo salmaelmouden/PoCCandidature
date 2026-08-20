@@ -16,3 +16,4 @@
 | ADRs | [decisions/](decisions/) |
 | Templates | [templates/](templates/) |
 | Plans | [plans/](plans/) |
+| YouTube demo ingest | [guides/youtube-demo-ingest.md](guides/youtube-demo-ingest.md) |

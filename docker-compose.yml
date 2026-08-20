@@ -15,6 +15,98 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks: [gia]
+
+  # App jobs/services reuse host WSL site-packages (mounted).
+  # Container python binary is used (venv python is a host symlink to /usr/bin/python3).
+  # Prerequisite: `make install` once on the host.
+  migrate:
+    image: python:3.12-slim
+    container_name: gia-migrate
+    working_dir: /app
+    command: ["python", "-m", "alembic", "upgrade", "head"]
+    environment: &app_env
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: growth_intelligence
+      POSTGRES_USER: growth
+      POSTGRES_PASSWORD: growth
+      APP_ENV: development
+      LOG_LEVEL: INFO
+      PYTHONPATH: /app:/opt/venv/lib/python3.12/site-packages
+    volumes:
+      - ./:/app
+      - ./.venv:/opt/venv:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks: [gia]
+
+  seed:
+    image: python:3.12-slim
+    container_name: gia-seed
+    working_dir: /app
+    command: ["python", "scripts/seed_synthetic_data.py"]
+    environment:
+      <<: *app_env
+      SYNTHETIC_SEED: "42"
+      SYNTHETIC_DAYS: "90"
+    volumes:
+      - ./:/app
+      - ./.venv:/opt/venv:ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+    networks: [gia]
+
+  dashboard:
+    image: python:3.12-slim
+    container_name: gia-dashboard
+    working_dir: /app
+    command:
+      [
+        "python",
+        "-m",
+        "streamlit",
+        "run",
+        "dashboard/Home.py",
+        "--server.address",
+        "0.0.0.0",
+        "--server.port",
+        "8501",
+        "--server.headless",
+        "true",
+      ]
+    environment:
+      <<: *app_env
+    volumes:
+      - ./:/app
+      - ./.venv:/opt/venv:ro
+    ports:
+      - "8501:8501"
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 25s
+    networks: [gia]
+
+networks:
+  gia:
 
 volumes:
   gia_pgdata:

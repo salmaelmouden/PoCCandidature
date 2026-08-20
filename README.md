@@ -2,14 +2,29 @@
 
 AI-native growth analytics, decision support, and automation for content-driven acquisition.
 
-> Independent portfolio project. All demo metrics use **labelled synthetic data**. Not affiliated with Finary; no private APIs, logos, or proprietary datasets.
+> Independent portfolio project. **Hybrid data:** labelled synthetic funnel metrics + optional real public YouTube Data API ingest. Not affiliated with Finary; no private APIs, logos, or proprietary datasets.
 
 ## Current status
 
-**Phase 3 — YouTube ingestion** on branch `phase-3-youtube-ingestion`.
+**Phase 4 — Dashboard** via Docker Compose (Postgres + migrate + seed + Streamlit).
 
-Phase 1 Postgres: `make up && make migrate && make seed` (host port **5434**).  
-Optional live ingest: set `YOUTUBE_API_KEY` + `YOUTUBE_CHANNEL_ID`, then `make ingest-youtube`.
+```bash
+make install   # once (venv is mounted into app containers)
+make up
+make status    # see running vs exited
+# open http://localhost:8501
+make logs
+make down
+```
+
+| Container | Role | Expected state |
+|-----------|------|----------------|
+| `gia-postgres` | PostgreSQL | **running** (healthy) |
+| `gia-migrate` | Alembic | **exited (0)** after migrate |
+| `gia-seed` | Synthetic seed | **exited (0)** after seed |
+| `gia-dashboard` | Streamlit | **running** → http://localhost:8501 |
+
+App containers mount the project + `.venv` (no pip install inside Docker — avoids TLS/PyPI issues).
 
 ## Quick start (Phase 1)
 
@@ -24,16 +39,24 @@ make test
 
 Synthetic seed is idempotent and clearly labelled (`synthetic_v1`).
 
-## YouTube ingest (Phase 3)
+## Real YouTube ingest (Phase 3, optional but recommended for demos)
+
+You do **not** need your own channel. Default public demo channel: **Two Cents (PBS)**  
+`UCL8w_A8p8P1HWI3k6PR5Z6w` — https://www.youtube.com/@TwoCentsPBS
+
+1. Create a free [YouTube Data API v3 key](https://console.cloud.google.com/) (details: [`docs/guides/youtube-demo-ingest.md`](docs/guides/youtube-demo-ingest.md)).
+2. Put only the key in `.env` (never commit it):
 
 ```bash
-# in .env — never commit secrets
-YOUTUBE_API_KEY=...
-YOUTUBE_CHANNEL_ID=...
+YOUTUBE_API_KEY=your_key_here
+# channel already defaults in .env.example
 make ingest-youtube
 ```
 
-Public Data API stats are **lifetime cumulative** snapshots labelled `youtube_api` (`is_synthetic=false`).
+| Layer | Source | Label |
+|-------|--------|--------|
+| Funnel / Premium story | Synthetic seed | `synthetic_v1` |
+| Video metadata + public stats | YouTube Data API | `youtube_api` |
 
 ## Architecture (target)
 
@@ -126,3 +149,9 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
 - [x] `youtube_ingestion` skill (Data API client, transform, idempotent load)
 - [x] CLI `make ingest-youtube`
 - [x] Mocked HTTP unit tests (no live key required)
+
+### Phase 4
+
+- [x] Streamlit Overview / Acquisition / Content / Funnel
+- [x] Application service glue (no business logic in UI)
+- [x] Service unit tests

@@ -24,6 +24,9 @@ Fetch, normalize, and persist YouTube channel video metadata and public statisti
 
 API key is supplied to `YouTubeClient` from env (`YOUTUBE_API_KEY`), never hard-coded.
 
+Public demo channel (no owned channel required): see `demo.py` and `docs/guides/youtube-demo-ingest.md`
+(`UCL8w_A8p8P1HWI3k6PR5Z6w` — PBS Two Cents).
+
 ## Outputs
 
 | Field | Type | Description |

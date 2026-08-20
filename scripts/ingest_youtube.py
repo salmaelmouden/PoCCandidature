@@ -12,6 +12,11 @@ from app.config import get_settings
 from app.db.session import create_db_engine, create_session_factory, session_scope
 from app.skills.youtube_ingestion import YouTubeIngestRequest, ingest_youtube_channel
 from app.skills.youtube_ingestion.client import YouTubeClient
+from app.skills.youtube_ingestion.demo import (
+    DEMO_YOUTUBE_CHANNEL_ID,
+    DEMO_YOUTUBE_CHANNEL_NAME,
+    DEMO_YOUTUBE_CHANNEL_URL,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -24,13 +29,29 @@ def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     settings = get_settings()
     api_key = settings.youtube_api_key
-    channel_id = args.channel_id or settings.youtube_channel_id
+    channel_id = args.channel_id or settings.youtube_channel_id or DEMO_YOUTUBE_CHANNEL_ID
     if not api_key:
-        logging.error("YOUTUBE_API_KEY is required (set in .env, never commit secrets)")
+        logging.error(
+            "YOUTUBE_API_KEY is required. See docs/guides/youtube-demo-ingest.md "
+            "(set in .env, never commit secrets)"
+        )
         return 1
-    if not channel_id:
-        logging.error("YOUTUBE_CHANNEL_ID or --channel-id is required")
-        return 1
+
+    if channel_id == DEMO_YOUTUBE_CHANNEL_ID and not (
+        args.channel_id or settings.youtube_channel_id
+    ):
+        logging.info(
+            "Using public demo channel %s (%s) — %s",
+            DEMO_YOUTUBE_CHANNEL_NAME,
+            DEMO_YOUTUBE_CHANNEL_ID,
+            DEMO_YOUTUBE_CHANNEL_URL,
+        )
+    elif channel_id == DEMO_YOUTUBE_CHANNEL_ID:
+        logging.info(
+            "Ingesting demo channel %s (%s)",
+            DEMO_YOUTUBE_CHANNEL_NAME,
+            DEMO_YOUTUBE_CHANNEL_ID,
+        )
 
     metric_date = date.fromisoformat(args.metric_date) if args.metric_date else None
     max_pages = args.max_pages or settings.youtube_max_pages

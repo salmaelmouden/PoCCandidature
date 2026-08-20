@@ -1,7 +1,29 @@
-# Dashboard (Phase 4+)
+# Dashboard (Phase 4)
 
-Streamlit UI — not implemented in Phase 0.
+Streamlit UI. **No business logic in pages** — call `app.services.dashboard`.
 
-Planned pages: Executive Overview · Acquisition · Content Performance · Funnel · AI Growth Analyst · Experiments.
+## Docker (recommended)
 
-Rule: **no business logic in the UI**.
+```bash
+make install   # once
+make up
+make status    # what's running vs exited
+# http://localhost:8501
+```
+
+| Container | Expected |
+|-----------|----------|
+| `gia-postgres` | running (healthy) |
+| `gia-migrate` | exited (0) |
+| `gia-seed` | exited (0) |
+| `gia-dashboard` | running → :8501 |
+
+## Layout
+
+| Path | Role |
+|------|------|
+| `Home.py` | Overview |
+| `pages/1_Acquisition.py` | Channel breakdown |
+| `pages/2_Content.py` | CVS + gaps |
+| `pages/3_Funnel.py` | Funnel rates |
+| `ui.py` / `db.py` | Presentation helpers |
