@@ -6,9 +6,10 @@ AI-native growth analytics, decision support, and automation for content-driven 
 
 ## Current status
 
-**Phase 2 — Analytics skills** (funnel, content, anomaly) on branch `phase-2-analytics-skills`.
+**Phase 3 — YouTube ingestion** on branch `phase-3-youtube-ingestion`.
 
-Phase 1 Postgres is runnable via Docker (`make up && make migrate && make seed`). Host port **5434** by default.
+Phase 1 Postgres: `make up && make migrate && make seed` (host port **5434**).  
+Optional live ingest: set `YOUTUBE_API_KEY` + `YOUTUBE_CHANNEL_ID`, then `make ingest-youtube`.
 
 ## Quick start (Phase 1)
 
@@ -22,6 +23,17 @@ make test
 ```
 
 Synthetic seed is idempotent and clearly labelled (`synthetic_v1`).
+
+## YouTube ingest (Phase 3)
+
+```bash
+# in .env — never commit secrets
+YOUTUBE_API_KEY=...
+YOUTUBE_CHANNEL_ID=...
+make ingest-youtube
+```
+
+Public Data API stats are **lifetime cumulative** snapshots labelled `youtube_api` (`is_synthetic=false`).
 
 ## Architecture (target)
 
@@ -108,3 +120,9 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
 - [x] `content_analysis` skill (documented Content Value Score, gaps)
 - [x] `anomaly_detection` skill (z-score, IQR, % change, rolling mean)
 - [x] Skill unit tests
+
+### Phase 3
+
+- [x] `youtube_ingestion` skill (Data API client, transform, idempotent load)
+- [x] CLI `make ingest-youtube`
+- [x] Mocked HTTP unit tests (no live key required)

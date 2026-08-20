@@ -1,7 +1,5 @@
 # Runtime skills (Phase 2+)
 
-Implemented:
-
 | Skill | Status |
 |-------|--------|
 | `funnel_analysis` | Phase 2 |
@@ -11,4 +9,4 @@ Implemented:
 | `experiment_analysis` | Phase 7 |
 | `report_generation` | Phase 9 |
 
-Skills are deterministic Python modules with Pydantic schemas. They do not access Streamlit or call LLMs.
+Skills are deterministic Python modules with Pydantic schemas (except I/O-bound ingestion). They do not access Streamlit or call LLMs for calculations.

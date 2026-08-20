@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
 
     postgres_host: str = Field(default="localhost", alias="POSTGRES_HOST")
-    postgres_port: int = Field(default=5432, alias="POSTGRES_PORT")
+    postgres_port: int = Field(default=5434, alias="POSTGRES_PORT")
     postgres_db: str = Field(default="growth_intelligence", alias="POSTGRES_DB")
     postgres_user: str = Field(default="growth", alias="POSTGRES_USER")
     postgres_password: str = Field(default="growth", alias="POSTGRES_PASSWORD")
@@ -27,6 +27,12 @@ class Settings(BaseSettings):
 
     synthetic_seed: int = Field(default=42, alias="SYNTHETIC_SEED")
     synthetic_days: int = Field(default=90, alias="SYNTHETIC_DAYS")
+
+    youtube_api_key: str | None = Field(default=None, alias="YOUTUBE_API_KEY")
+    youtube_channel_id: str | None = Field(default=None, alias="YOUTUBE_CHANNEL_ID")
+    youtube_timeout_seconds: float = Field(default=30.0, alias="YOUTUBE_TIMEOUT_SECONDS")
+    youtube_max_retries: int = Field(default=3, alias="YOUTUBE_MAX_RETRIES")
+    youtube_max_pages: int = Field(default=10, alias="YOUTUBE_MAX_PAGES")
 
     @property
     def sqlalchemy_database_url(self) -> str:

@@ -1,15 +1,16 @@
 # Growth Intelligence AI
-.PHONY: help install up down migrate seed test lint
+.PHONY: help install up down migrate seed ingest-youtube test lint
 
 help:
 	@echo "Targets:"
-	@echo "  make install  - install package + dev deps"
-	@echo "  make up       - start Postgres (Docker Compose)"
-	@echo "  make down     - stop Postgres"
-	@echo "  make migrate  - run Alembic migrations"
-	@echo "  make seed     - load labelled synthetic data (idempotent)"
-	@echo "  make test     - run pytest"
-	@echo "  make lint     - run ruff"
+	@echo "  make install         - install package + dev deps"
+	@echo "  make up              - start Postgres (Docker Compose)"
+	@echo "  make down            - stop Postgres"
+	@echo "  make migrate         - run Alembic migrations"
+	@echo "  make seed            - load labelled synthetic data (idempotent)"
+	@echo "  make ingest-youtube  - ingest YouTube channel via Data API"
+	@echo "  make test            - run pytest"
+	@echo "  make lint            - run ruff"
 
 install:
 	python -m pip install -e ".[dev]"
@@ -25,6 +26,9 @@ migrate:
 
 seed:
 	python scripts/seed_synthetic_data.py
+
+ingest-youtube:
+	python scripts/ingest_youtube.py
 
 test:
 	pytest -q

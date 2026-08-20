@@ -1,6 +1,6 @@
 # Architecture Overview
 
-**Status:** Phase 2 — analytics skills (funnel, content, anomaly)
+**Status:** Phase 3 — YouTube ingestion
 
 ## Product loop
 
