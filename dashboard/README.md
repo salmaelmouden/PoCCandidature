@@ -26,4 +26,5 @@ make status    # what's running vs exited
 | `pages/1_Acquisition.py` | Channel breakdown |
 | `pages/2_Content.py` | CVS + gaps |
 | `pages/3_Funnel.py` | Funnel rates |
+| `pages/4_Analyst.py` | Data analyst agent UI |
 | `ui.py` / `db.py` | Presentation helpers |

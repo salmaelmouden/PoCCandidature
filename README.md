@@ -6,15 +6,13 @@ AI-native growth analytics, decision support, and automation for content-driven 
 
 ## Current status
 
-**Phase 4 — Dashboard** via Docker Compose (Postgres + migrate + seed + Streamlit).
+**Phase 5 — Data Analyst agent** on branch `phase-5-data-analyst`.
 
 ```bash
 make install   # once (venv is mounted into app containers)
 make up
-make status    # see running vs exited
-# open http://localhost:8501
-make logs
-make down
+make status
+# open http://localhost:8501 → page "Analyst"
 ```
 
 | Container | Role | Expected state |
@@ -155,3 +153,10 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
 - [x] Streamlit Overview / Acquisition / Content / Funnel
 - [x] Application service glue (no business logic in UI)
 - [x] Service unit tests
+
+### Phase 5
+
+- [x] `growth_data_analyst_agent` (tools + FACT/INTERPRETATION report)
+- [x] Deterministic synthesizer (no LLM required for CI/demos)
+- [x] Streamlit Analyst page
+- [x] Agent unit tests

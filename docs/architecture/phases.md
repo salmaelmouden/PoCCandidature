@@ -8,8 +8,8 @@ Do not implement later phases until the current phase is approved.
 | 1 | Data foundation (Postgres, models, synthetic data) | Done (Docker seeded) |
 | 2 | Analytics skills (funnel, content, anomaly) | Done |
 | 3 | YouTube ingestion | Done |
-| 4 | Dashboard (overview, acquisition, content, funnel) | **Done (awaiting push/merge)** |
-| 5 | Data Analyst agent | Not started |
+| 4 | Dashboard (overview, acquisition, content, funnel) | Done |
+| 5 | Data Analyst agent | **Done (awaiting push)** |
 | 6 | Strategist + Orchestrator | Not started |
 | 7 | Experimentation skill + agent | Not started |
 | 8 | Langfuse observability | Not started |
