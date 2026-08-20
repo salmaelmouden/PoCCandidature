@@ -11,4 +11,4 @@
 - [x] Tools + schemas + deterministic `run`
 - [x] Unit tests (SQLite + seeded acquisition)
 - [x] Dashboard Analyst page
-- [ ] Commit/push branch
+- [x] Commit/push branch
