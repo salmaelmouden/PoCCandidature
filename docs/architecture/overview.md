@@ -1,6 +1,6 @@
 # Architecture Overview
 
-**Status:** Phase 3 — YouTube ingestion
+**Status:** Phase 4 — Streamlit dashboard
 
 ## Product loop
 

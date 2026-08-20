@@ -24,8 +24,9 @@ make down            # docker compose down
 make migrate         # alembic upgrade head
 make seed            # labelled synthetic data (idempotent)
 make ingest-youtube  # YouTube Data API ingest (needs API key)
+make dashboard       # Streamlit UI
 make test            # pytest -q
-make lint            # ruff check app tests scripts
+make lint            # ruff check app tests scripts dashboard
 ```
 
 ## Hard stops

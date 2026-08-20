@@ -1,5 +1,5 @@
 # Growth Intelligence AI
-.PHONY: help install up down migrate seed ingest-youtube test lint
+.PHONY: help install up down migrate seed ingest-youtube dashboard test lint
 
 help:
 	@echo "Targets:"
@@ -9,6 +9,7 @@ help:
 	@echo "  make migrate         - run Alembic migrations"
 	@echo "  make seed            - load labelled synthetic data (idempotent)"
 	@echo "  make ingest-youtube  - ingest YouTube channel via Data API"
+	@echo "  make dashboard       - run Streamlit dashboard"
 	@echo "  make test            - run pytest"
 	@echo "  make lint            - run ruff"
 
@@ -30,8 +31,11 @@ seed:
 ingest-youtube:
 	python scripts/ingest_youtube.py
 
+dashboard:
+	streamlit run dashboard/Home.py
+
 test:
 	pytest -q
 
 lint:
-	ruff check app tests scripts
+	ruff check app tests scripts dashboard

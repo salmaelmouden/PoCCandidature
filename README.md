@@ -6,10 +6,12 @@ AI-native growth analytics, decision support, and automation for content-driven 
 
 ## Current status
 
-**Phase 3 — YouTube ingestion** on branch `phase-3-youtube-ingestion`.
+**Phase 4 — Dashboard** on branch `phase-4-dashboard`.
 
-Phase 1 Postgres: `make up && make migrate && make seed` (host port **5434**).  
-Optional live ingest: set `YOUTUBE_API_KEY` + `YOUTUBE_CHANNEL_ID`, then `make ingest-youtube`.
+```bash
+make up && make migrate && make seed
+make dashboard
+```
 
 ## Quick start (Phase 1)
 
@@ -126,3 +128,9 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
 - [x] `youtube_ingestion` skill (Data API client, transform, idempotent load)
 - [x] CLI `make ingest-youtube`
 - [x] Mocked HTTP unit tests (no live key required)
+
+### Phase 4
+
+- [x] Streamlit Overview / Acquisition / Content / Funnel
+- [x] Application service glue (no business logic in UI)
+- [x] Service unit tests
