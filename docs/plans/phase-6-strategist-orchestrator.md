@@ -1,6 +1,6 @@
 # Plan: Phase 6 — Strategist + Orchestrator
 
-**Status:** In progress  
+**Status:** Implemented  
 **Branch:** `phase-6-strategist-orchestrator`  
 **Scope:** `growth_strategist_agent`, `growth_orchestrator_agent`, Streamlit Orchestrator page.  
 **Out of scope:** Experiment agent (Phase 7), Langfuse (Phase 8), required LLM, n8n.
