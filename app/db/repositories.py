@@ -128,15 +128,28 @@ class AcquisitionRepository:
         self._session.flush()
         return existing
 
-    def sum_funnel(
-        self, *, start: date, end: date, channel: str | None = None
-    ) -> dict[str, int]:
+    def list_between(
+        self,
+        *,
+        start: date,
+        end: date,
+        channel: str | None = None,
+    ) -> Sequence[Acquisition]:
         rows = self._session.scalars(
-            select(Acquisition).where(
+            select(Acquisition)
+            .where(
                 Acquisition.metric_date >= start,
                 Acquisition.metric_date <= end,
             )
+            .order_by(Acquisition.metric_date)
         ).all()
+        if channel is None:
+            return rows
+        return [row for row in rows if row.channel == channel]
+
+    def sum_funnel(
+        self, *, start: date, end: date, channel: str | None = None
+    ) -> dict[str, int]:
         totals = {
             "views": 0,
             "visits": 0,
@@ -144,15 +157,32 @@ class AcquisitionRepository:
             "activated_users": 0,
             "premium_users": 0,
         }
-        for row in rows:
-            if channel is not None and row.channel != channel:
-                continue
+        for row in self.list_between(start=start, end=end, channel=channel):
             totals["views"] += row.views
             totals["visits"] += row.visits
             totals["signups"] += row.signups
             totals["activated_users"] += row.activated_users
             totals["premium_users"] += row.premium_users
         return totals
+
+    def daily_metric_series(
+        self,
+        *,
+        start: date,
+        end: date,
+        metric: str,
+        channel: str | None = None,
+    ) -> list[tuple[date, int]]:
+        """Sum one funnel metric per day (ordered)."""
+        allowed = {"views", "visits", "signups", "activated_users", "premium_users"}
+        if metric not in allowed:
+            raise ValueError(f"Unsupported metric: {metric}")
+        by_day: dict[date, int] = {}
+        for row in self.list_between(start=start, end=end, channel=channel):
+            by_day[row.metric_date] = by_day.get(row.metric_date, 0) + int(
+                getattr(row, metric)
+            )
+        return sorted(by_day.items(), key=lambda item: item[0])
 
 
 class UserRepository:

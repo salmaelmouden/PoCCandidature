@@ -5,8 +5,8 @@ Do not implement later phases until the current phase is approved.
 | Phase | Name | Status |
 |-------|------|--------|
 | 0 | Engineering foundation | Done |
-| 1 | Data foundation (Postgres, models, synthetic data) | **In progress / awaiting approval** |
-| 2 | Analytics skills (funnel, content, anomaly) | Not started |
+| 1 | Data foundation (Postgres, models, synthetic data) | Done (Docker seeded) |
+| 2 | Analytics skills (funnel, content, anomaly) | **Done (awaiting merge)** |
 | 3 | YouTube ingestion | Not started |
 | 4 | Dashboard (overview, acquisition, content, funnel) | Not started |
 | 5 | Data Analyst agent | Not started |
@@ -16,10 +16,12 @@ Do not implement later phases until the current phase is approved.
 | 9 | n8n + report generation | Not started |
 | 10 | Evaluation + polish | Not started |
 
+## Branching convention
+
+Each phase is developed on `phase-N-<slug>`, committed, and pushed. Merge to `main` when approved.
+
 ## MVP priority
 
 - **P0:** foundation, Postgres, synthetic data, funnel/content analysis, dashboard, analyst, strategist, orchestrator
 - **P1:** YouTube, experiment agent, n8n
 - **P2:** Langfuse, evaluation framework, advanced anomalies, polish
-
-Never sacrifice architectural quality to add more AI features.

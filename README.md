@@ -6,7 +6,9 @@ AI-native growth analytics, decision support, and automation for content-driven 
 
 ## Current status
 
-**Phase 1 — Data foundation** (Postgres models, repositories, synthetic seed).
+**Phase 2 — Analytics skills** (funnel, content, anomaly) on branch `phase-2-analytics-skills`.
+
+Phase 1 Postgres is runnable via Docker (`make up && make migrate && make seed`). Host port **5434** by default.
 
 ## Quick start (Phase 1)
 
@@ -99,3 +101,10 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
 - [x] Repository layer
 - [x] Labelled synthetic generator + idempotent seed
 - [x] Unit tests for generator + repositories
+
+### Phase 2
+
+- [x] `funnel_analysis` skill (rates, dropoffs, bottleneck, period compare)
+- [x] `content_analysis` skill (documented Content Value Score, gaps)
+- [x] `anomaly_detection` skill (z-score, IQR, % change, rolling mean)
+- [x] Skill unit tests

@@ -1,6 +1,6 @@
 # Architecture Overview
 
-**Status:** Phase 1 — data foundation (models, repositories, synthetic seed)
+**Status:** Phase 2 — analytics skills (funnel, content, anomaly)
 
 ## Product loop
 

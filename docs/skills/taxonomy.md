@@ -4,16 +4,16 @@
 
 A skill is a reusable, typed capability. Prefer deterministic Python. Independently testable. No UI dependency.
 
-## Runtime skills (planned)
+## Runtime skills
 
-| Skill | Responsibility |
-|-------|----------------|
-| `youtube_ingestion` | Fetch/normalize/persist YouTube metadata and metrics |
-| `funnel_analysis` | Funnel rates, dropoffs, bottlenecks, period compare |
-| `content_analysis` | Rank content, value score, topic compare, reach/conversion gaps |
-| `anomaly_detection` | Deterministic anomaly flags (z-score, IQR, thresholds, …) |
-| `experiment_analysis` | Rates, deltas, CIs, significance, practical significance |
-| `report_generation` | Structured weekly growth report from analytical results |
+| Skill | Status | Responsibility |
+|-------|--------|----------------|
+| `funnel_analysis` | **Phase 2** | Funnel rates, dropoffs, bottlenecks, period compare |
+| `content_analysis` | **Phase 2** | Content Value Score, rank, topic compare, reach/conversion gaps |
+| `anomaly_detection` | **Phase 2** | Deterministic anomaly flags (z-score, IQR, % change, rolling mean) |
+| `youtube_ingestion` | Phase 3 | Fetch/normalize/persist YouTube metadata and metrics |
+| `experiment_analysis` | Phase 7 | Rates, deltas, CIs, significance |
+| `report_generation` | Phase 9 | Weekly growth report from analytical results |
 
 ## Naming
 
@@ -21,7 +21,7 @@ A skill is a reusable, typed capability. Prefer deterministic Python. Independen
 
 ## Contracts
 
-Every skill uses `docs/templates/skill-contract.md`.
+Every skill uses `docs/templates/skill-contract.md` and ships a README.
 
 ## Core split
 
