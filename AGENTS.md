@@ -18,16 +18,20 @@ Phase discipline: do not implement later-phase application code until the curren
 ## Project commands
 
 ```bash
-make install         # pip install -e ".[dev]"
-make up              # docker compose up -d (Postgres)
-make down            # docker compose down
-make migrate         # alembic upgrade head
-make seed            # labelled synthetic data (idempotent)
+make up              # Docker: postgres + migrate + seed + dashboard
+make status          # docker compose ps -a
+make logs            # follow container logs
+make down            # stop stack
+make install         # local .venv (optional)
+make migrate         # local alembic
+make seed            # local seed
 make ingest-youtube  # YouTube Data API ingest (needs API key)
-make dashboard       # Streamlit UI
+make dashboard       # local Streamlit
 make test            # pytest -q
-make lint            # ruff check app tests scripts dashboard
+make lint            # ruff
 ```
+
+Preferred path: **`make up`** then open http://localhost:8501 and use **`make status`** to see what is running.
 
 ## Hard stops
 

@@ -35,6 +35,7 @@ data/tmp/
 # Docker volumes / local DB dumps
 *.sql.gz
 backups/
+.docker-wheels/
 
 # Secrets / credentials
 *.pem

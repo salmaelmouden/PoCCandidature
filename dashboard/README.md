@@ -1,25 +1,29 @@
 # Dashboard (Phase 4)
 
-Streamlit UI for growth metrics. **No business logic in pages** — pages call `app.services.dashboard`, which uses repositories + analytics skills.
+Streamlit UI. **No business logic in pages** — call `app.services.dashboard`.
 
-## Run
+## Docker (recommended)
 
 ```bash
-make up && make migrate && make seed
-make dashboard
+make install   # once
+make up
+make status    # what's running vs exited
+# http://localhost:8501
 ```
 
-Opens Overview plus pages: Acquisition, Content, Funnel.
+| Container | Expected |
+|-----------|----------|
+| `gia-postgres` | running (healthy) |
+| `gia-migrate` | exited (0) |
+| `gia-seed` | exited (0) |
+| `gia-dashboard` | running → :8501 |
 
 ## Layout
 
 | Path | Role |
 |------|------|
-| `Home.py` | Executive overview |
+| `Home.py` | Overview |
 | `pages/1_Acquisition.py` | Channel breakdown |
-| `pages/2_Content.py` | CVS ranking + gaps |
-| `pages/3_Funnel.py` | Stage rates + period compare |
-| `ui.py` | Theme / banners / filters |
-| `db.py` | DB session helper |
-
-Synthetic / labelled data is always surfaced via the provenance banner.
+| `pages/2_Content.py` | CVS + gaps |
+| `pages/3_Funnel.py` | Funnel rates |
+| `ui.py` / `db.py` | Presentation helpers |
