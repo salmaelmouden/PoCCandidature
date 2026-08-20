@@ -174,8 +174,9 @@ services:
       N8N_SECURE_COOKIE: "false"
       N8N_DIAGNOSTICS_ENABLED: "false"
       N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "false"
     volumes:
-      - gia_n8n_data:/home/node/.n8n
+      - gia_n8n_home:/home/node/.n8n
       - ./n8n/workflows:/import:ro
     depends_on:
       api:
@@ -183,10 +184,20 @@ services:
     networks: [gia]
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    # Named volumes are root-owned; fix perms then drop to node (empty root volume broke CLI).
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        mkdir -p /home/node/.n8n
+        chown -R node:node /home/node/.n8n
+        exec runuser -u node -g node -- /opt/n8n/node_modules/.bin/n8n start
+    working_dir: /opt/n8n
 
 networks:
   gia:
 
 volumes:
   gia_pgdata:
-  gia_n8n_data:
+  gia_n8n_home:

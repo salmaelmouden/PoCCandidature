@@ -31,13 +31,17 @@ RUN npm install --omit=dev --no-fund --no-audit \
     && chown -R node:node /opt/n8n
 
 USER node
+ENV PATH="/opt/n8n/node_modules/.bin:${PATH}"
 ENV N8N_PORT=5678
 ENV N8N_PROTOCOL=http
 ENV N8N_SECURE_COOKIE=false
 ENV N8N_DIAGNOSTICS_ENABLED=false
 ENV N8N_PERSONALIZATION_ENABLED=false
+ENV N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
 ENV GENERIC_TIMEZONE=Europe/Paris
 ENV TZ=Europe/Paris
 EXPOSE 5678
 
-CMD ["./node_modules/.bin/n8n", "start"]
+# Override node image entrypoint so `start` reaches the n8n CLI.
+ENTRYPOINT ["n8n"]
+CMD ["start"]

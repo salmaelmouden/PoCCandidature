@@ -100,7 +100,8 @@ report:
 	$(PYTHON) scripts/generate_weekly_report.py --days 7
 
 n8n-import:
-	docker compose --profile n8n exec n8n n8n import:workflow --input=/import/weekly_growth_report.json
+	docker compose --profile n8n exec -u node -w /opt/n8n n8n \
+		/opt/n8n/node_modules/.bin/n8n import:workflow --input=/import/weekly_growth_report.json
 	@echo "Imported. Open http://localhost:5678 and refresh Workflows."
 
 test:
