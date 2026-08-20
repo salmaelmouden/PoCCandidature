@@ -6,15 +6,17 @@ AI-native growth analytics, decision support, and automation for content-driven 
 
 ## Current status
 
-**Phase 9 — n8n + reports** on branch `phase-9-n8n-reports`.
+**Phase 10 — Evaluation + polish** on branch `phase-10-evaluation-polish` (MVP complete).
 
 ```bash
 make install   # once (venv is mounted into app containers)
 make up        # core stack (n8n optional — corporate Docker Hub often blocked)
 make status
+make eval      # agent evaluation suite
 # Dashboard: http://localhost:8501
 # API docs:  http://localhost:8000/docs
-# n8n UI:    make n8n-build && make up-n8n  (local image; Docker Hub blocked)
+# n8n UI:    make n8n-build && make up-n8n
+# Demo:      docs/guides/demo-script.md
 ```
 
 | Container | Role | Expected state |
@@ -192,3 +194,10 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
 - [x] FastAPI `POST /api/reports/weekly` (`gia-api`)
 - [x] n8n visual UI in Docker (`gia-n8n` :5678) + importable canvas workflow
 - [x] Guide: `docs/guides/n8n-weekly-report.md`
+
+### Phase 10
+
+- [x] Runnable eval suite (`make eval`) + scoring helpers
+- [x] Pinned synthetic fixtures for CI
+- [x] Interview demo script (`docs/guides/demo-script.md`)
+- [x] Docs / phases polish (MVP complete)

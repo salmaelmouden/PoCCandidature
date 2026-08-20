@@ -18,9 +18,8 @@ Why did Premium conversion decrease?
 
 ## Context
 
-- Synthetic dataset with a known period-over-period Premium conversion decline
-- Prefer evidence from funnel + channel + content skills
-- Dataset version: TBD in Phase 1+
+- Synthetic fixture: `evaluation/datasets/fixtures.py` (`seed_premium_drop_fixture`)
+- Period: `as_of=2026-08-20`, `days=7`, label `synthetic_v1`
 
 ## Expected behavior
 

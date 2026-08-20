@@ -1,5 +1,14 @@
-# Evaluators (Phase 10)
+# Evaluators
 
-Scoring helpers for evaluation dimensions will live here.
+Python scoring helpers for agent evaluation dimensions.
 
-Phase 0: directory reserved only.
+| Module | Role |
+|--------|------|
+| `scoring.py` | Dimension checks (tool_selection, factuality, hallucination, …) |
+
+Run via:
+
+```bash
+make eval
+# or: pytest -q evaluation/tests
+```
