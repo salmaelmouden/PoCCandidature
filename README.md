@@ -6,15 +6,15 @@ AI-native growth analytics, decision support, and automation for content-driven 
 
 ## Current status
 
-**Phase 8 — Langfuse observability** on branch `phase-8-langfuse`.
+**Phase 9 — n8n + reports** on branch `phase-9-n8n-reports`.
 
 ```bash
 make install   # once (venv is mounted into app containers)
-pip install '.[observability]'   # optional, for Langfuse SDK
-make up
+make up        # core stack (n8n optional — corporate Docker Hub often blocked)
 make status
-# open http://localhost:8501 → Orchestrator
-# optional: set LANGFUSE_* in .env — see docs/guides/langfuse.md
+# Dashboard: http://localhost:8501
+# API docs:  http://localhost:8000/docs
+# n8n UI:    make n8n-build && make up-n8n  (local image; Docker Hub blocked)
 ```
 
 | Container | Role | Expected state |
@@ -22,7 +22,9 @@ make status
 | `gia-postgres` | PostgreSQL | **running** (healthy) |
 | `gia-migrate` | Alembic | **exited (0)** after migrate |
 | `gia-seed` | Synthetic seed | **exited (0)** after seed |
+| `gia-api` | FastAPI reports | **running** → http://localhost:8000 |
 | `gia-dashboard` | Streamlit | **running** → http://localhost:8501 |
+| `gia-n8n` | n8n visual editor | **optional** (`make up-n8n`) → http://localhost:5678 |
 
 App containers mount the project + `.venv` (no pip install inside Docker — avoids TLS/PyPI issues).
 
@@ -183,3 +185,10 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
 - [x] Orchestrator / agents / analyst tools instrumented
 - [x] Sanitize secrets; Streamlit `flush_tracing`
 - [x] Guide: `docs/guides/langfuse.md`
+
+### Phase 9
+
+- [x] `report_generation` skill + weekly report service
+- [x] FastAPI `POST /api/reports/weekly` (`gia-api`)
+- [x] n8n visual UI in Docker (`gia-n8n` :5678) + importable canvas workflow
+- [x] Guide: `docs/guides/n8n-weekly-report.md`

@@ -12,8 +12,8 @@ Do not implement later phases until the current phase is approved.
 | 5 | Data Analyst agent | Done |
 | 6 | Strategist + Orchestrator | Done |
 | 7 | Experimentation skill + agent | Done |
-| 8 | Langfuse observability | **Done (awaiting push)** |
-| 9 | n8n + report generation | Not started |
+| 8 | Langfuse observability | Done |
+| 9 | n8n + report generation | **Done (awaiting push)** |
 | 10 | Evaluation + polish | Not started |
 
 ## Branching convention

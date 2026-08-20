@@ -1,0 +1,3 @@
+# Place full-bundle.pem here via `make n8n-build` (copied from ~/certs).
+*
+!.gitignore
