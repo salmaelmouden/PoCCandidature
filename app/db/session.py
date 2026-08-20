@@ -19,8 +19,11 @@ def create_session_factory(engine: Engine) -> sessionmaker[Session]:
 
 
 @contextmanager
-def session_scope(session_factory: sessionmaker[Session]) -> Generator[Session, None, None]:
-    session = session_factory()
+def session_scope(
+    session_factory: sessionmaker[Session] | None = None,
+) -> Generator[Session, None, None]:
+    factory = session_factory or create_session_factory(create_db_engine())
+    session = factory()
     try:
         yield session
         session.commit()

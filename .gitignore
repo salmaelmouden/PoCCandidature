@@ -45,3 +45,7 @@ service-account*.json
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Generated reports (keep directory)
+reports/*.md
+!reports/.gitkeep

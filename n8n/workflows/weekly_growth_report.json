@@ -1,0 +1,156 @@
+{
+  "name": "Weekly Growth Report",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Growth Intelligence AI\n\n**Visual automation demo**\n\n1. Trigger (manual or Monday 09:00)\n2. Call `gia-api` → weekly report\n3. Show markdown in n8n\n\nOpen API docs: http://localhost:8000/docs",
+        "height": 280,
+        "width": 320,
+        "color": 5
+      },
+      "id": "sticky-overview",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-220, 120]
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [160, 200]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [1],
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Every Monday 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [160, 420]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://gia-api:8000/api/reports/weekly",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "days", "value": "7" },
+            { "name": "include_orchestrator", "value": "true" },
+            { "name": "save", "value": "true" }
+          ]
+        },
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "http-weekly-report",
+      "name": "Generate Weekly Report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "period",
+              "name": "period",
+              "value": "={{ $json.period_start }} → {{ $json.period_end }}",
+              "type": "string"
+            },
+            {
+              "id": "saved_path",
+              "name": "saved_path",
+              "value": "={{ $json.saved_path }}",
+              "type": "string"
+            },
+            {
+              "id": "markdown",
+              "name": "markdown",
+              "value": "={{ $json.markdown }}",
+              "type": "string"
+            },
+            {
+              "id": "provenance",
+              "name": "provenance_note",
+              "value": "={{ $json.provenance_note }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format-output",
+      "name": "Format Report Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [760, 300]
+    },
+    {
+      "parameters": {
+        "content": "### Output\n\nInspect **markdown** on the last node.\n\nFile also saved under `./reports/` on the API host volume.",
+        "height": 200,
+        "width": 280,
+        "color": 4
+      },
+      "id": "sticky-output",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [980, 160]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [{ "node": "Generate Weekly Report", "type": "main", "index": 0 }]
+      ]
+    },
+    "Every Monday 09:00": {
+      "main": [
+        [{ "node": "Generate Weekly Report", "type": "main", "index": 0 }]
+      ]
+    },
+    "Generate Weekly Report": {
+      "main": [
+        [{ "node": "Format Report Fields", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "gia-weekly-v1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "growth-intelligence-ai-poc"
+  },
+  "id": "gia-weekly-growth-report",
+  "tags": [
+    {
+      "name": "growth-intelligence",
+      "id": "gia-tag"
+    }
+  ]
+}

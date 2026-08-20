@@ -13,7 +13,7 @@ A skill is a reusable, typed capability. Prefer deterministic Python. Independen
 | `anomaly_detection` | **Phase 2** | Deterministic anomaly flags (z-score, IQR, % change, rolling mean) |
 | `youtube_ingestion` | **Phase 3** | Fetch/normalize/persist YouTube metadata and metrics |
 | `experiment_analysis` | **Phase 7** | Rates, deltas, CIs, significance |
-| `report_generation` | Phase 9 | Weekly growth report from analytical results |
+| `report_generation` | **Phase 9** | Weekly growth report from analytical results |
 
 ## Naming
 
