@@ -34,7 +34,7 @@ observability = [
 packages = ["app", "dashboard"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "app"]
+testpaths = ["tests", "app", "evaluation"]
 pythonpath = ["."]
 
 [tool.ruff]

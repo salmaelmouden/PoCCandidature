@@ -13,8 +13,8 @@ Do not implement later phases until the current phase is approved.
 | 6 | Strategist + Orchestrator | Done |
 | 7 | Experimentation skill + agent | Done |
 | 8 | Langfuse observability | Done |
-| 9 | n8n + report generation | **Done (awaiting push)** |
-| 10 | Evaluation + polish | Not started |
+| 9 | n8n + report generation | Done |
+| 10 | Evaluation + polish | **Done (awaiting push)** |
 
 ## Branching convention
 

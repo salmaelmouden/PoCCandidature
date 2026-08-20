@@ -1,5 +1,5 @@
 # Growth Intelligence AI
-.PHONY: help install up up-n8n n8n-build down status logs migrate seed ingest-youtube dashboard api test lint report n8n-import
+.PHONY: help install up up-n8n n8n-build down status logs migrate seed ingest-youtube dashboard api test eval lint report n8n-import
 
 VENV := .venv
 PYTHON := $(VENV)/bin/python
@@ -25,8 +25,11 @@ help:
 	@echo "  make up-n8n      - core + n8n visual UI (:5678)"
 	@echo "  make n8n-import  - import weekly workflow into running n8n"
 	@echo "  make report      - CLI weekly markdown report"
+	@echo "  make eval        - agent evaluation suite (Phase 10)"
+	@echo "  make test        - full pytest"
 	@echo ""
 	@echo "URLs: dashboard :8501 | api :8000/docs | n8n :5678"
+	@echo "Demo: docs/guides/demo-script.md"
 
 install:
 	@test -d $(VENV) || python3 -m venv $(VENV) || (command -v uv >/dev/null && uv venv $(VENV) --python python3)
@@ -107,5 +110,8 @@ n8n-import:
 test:
 	$(PYTEST) -q
 
+eval:
+	$(PYTEST) -q evaluation/tests
+
 lint:
-	$(RUFF) check app tests scripts dashboard
+	$(RUFF) check app tests scripts dashboard evaluation

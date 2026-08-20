@@ -1,12 +1,13 @@
 # Evaluation
 
-Structure for evaluating Growth Intelligence AI agents.
+Runnable evaluation for Growth Intelligence AI agents (Phase 10).
 
 ## Layout
 
-- `datasets/` — synthetic fixtures and pinned analytical snapshots
-- `cases/` — human-readable evaluation cases
-- `evaluators/` — scoring helpers (implemented in Phase 10)
+- `datasets/` — pinned fixtures (`fixtures.py`, as_of `2026-08-20`)
+- `cases/` — human-readable case specs
+- `evaluators/` — scoring helpers
+- `tests/` — pytest suite (`make eval`)
 
 ## Dimensions
 
@@ -16,14 +17,25 @@ Structure for evaluating Growth Intelligence AI agents.
 - recommendation_quality
 - hallucination
 - completeness
-- latency (optional)
-- cost (optional)
+
+## Run
+
+```bash
+make eval
+# or: pytest -q evaluation/tests
+```
+
+## Cases
+
+| Case ID | Focus |
+|---------|--------|
+| `eval_analyst_premium_conversion_drop` | Tools + FACT + YouTube driver |
+| `eval_orchestrator_routing` | analyst / strategist / experiment routes |
+| `eval_strategist_premium_actions` | Grounded RECOMMENDATIONs |
+| `eval_experiment_youtube_cta` | `ship_treatment` on synthetic CTA |
 
 ## Templates
 
 - Case: `docs/templates/evaluation-case.md`
 - Strategy: `docs/conventions/evaluation.md`
-
-## Status
-
-Phase 0: structure + example case only. No evaluator runtime yet.
+- Demo: `docs/guides/demo-script.md`
