@@ -57,6 +57,8 @@ Implemented: `videos`, `video_daily_metrics`, `acquisition`, `users`, `experimen
 
 See [data-model.md](data-model.md).
 
-## Synthetic data policy
+## Synthetic + public API data policy
 
-All demo data is **synthetic** and labelled as such. Not Finary data. No private APIs or proprietary datasets.
+- Funnel / acquisition demos use **labelled synthetic** data (`synthetic_v1`).
+- Optional **real** public YouTube Data API ingest is labelled `youtube_api` (see `docs/guides/youtube-demo-ingest.md`).
+- Never present either as Finary (or any employer) private data. No private APIs, logos, or proprietary datasets.

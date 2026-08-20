@@ -52,6 +52,7 @@ seed:
 	$(PYTHON) scripts/seed_synthetic_data.py
 
 ingest-youtube:
+	@echo "Requires YOUTUBE_API_KEY in .env — see docs/guides/youtube-demo-ingest.md"
 	$(PYTHON) scripts/ingest_youtube.py
 
 dashboard:

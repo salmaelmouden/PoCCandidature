@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     youtube_channel_id: str | None = Field(default=None, alias="YOUTUBE_CHANNEL_ID")
     youtube_timeout_seconds: float = Field(default=30.0, alias="YOUTUBE_TIMEOUT_SECONDS")
     youtube_max_retries: int = Field(default=3, alias="YOUTUBE_MAX_RETRIES")
-    youtube_max_pages: int = Field(default=10, alias="YOUTUBE_MAX_PAGES")
+    youtube_max_pages: int = Field(default=2, alias="YOUTUBE_MAX_PAGES")
 
     @property
     def sqlalchemy_database_url(self) -> str:
