@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     youtube_max_retries: int = Field(default=3, alias="YOUTUBE_MAX_RETRIES")
     youtube_max_pages: int = Field(default=2, alias="YOUTUBE_MAX_PAGES")
 
+    langfuse_public_key: str | None = Field(default=None, alias="LANGFUSE_PUBLIC_KEY")
+    langfuse_secret_key: str | None = Field(default=None, alias="LANGFUSE_SECRET_KEY")
+    langfuse_host: str | None = Field(default=None, alias="LANGFUSE_HOST")
+
     @property
     def sqlalchemy_database_url(self) -> str:
         if self.database_url:

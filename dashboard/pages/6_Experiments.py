@@ -14,6 +14,7 @@ from app.agents.growth_experiment_analyst_agent.prompts import (
 )
 from dashboard.db import db_session
 from dashboard.ui import page_header, sidebar_filters
+from app.observability import flush_tracing
 
 EXAMPLE_QUESTIONS = [
     DEFAULT_EXPERIMENT_QUESTION,
@@ -46,6 +47,7 @@ if run:
             session,
             ExperimentAnalystQuestion(question=question, days=days, channel=channel),
         )
+    flush_tracing()
 
     st.caption(f"Mode: `{report.mode.value}`")
     if report.experiment_key:

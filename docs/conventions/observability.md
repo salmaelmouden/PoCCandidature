@@ -1,18 +1,20 @@
 # Observability Strategy
 
-## Target (Phase 8)
+## Target (Phase 8) — implemented
 
-Langfuse traces for:
+Optional Langfuse traces for:
 
 - user question
 - orchestrator decisions
 - agent calls
-- tool / skill calls
-- latency
-- model identity
-- token usage when available
-- errors
-- final response
+- tool / skill calls (analyst tools)
+- latency (span timing)
+- errors (span failures swallowed; app continues)
+- final response summary
+
+Model identity / token usage: N/A while agents are deterministic (no LLM). Ready when LLM layer is added.
+
+See `app/observability/` and `docs/guides/langfuse.md`.
 
 ## Rules
 

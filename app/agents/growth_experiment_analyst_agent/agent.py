@@ -19,6 +19,7 @@ from app.agents.growth_experiment_analyst_agent.tools import (
 )
 from app.skills.experiment_analysis import DecisionHint, propose_experiment_design
 from app.skills.experiment_analysis.schemas import ExperimentDesignProposal
+from app.observability import observation
 
 
 def classify_experiment_mode(question: str) -> ExperimentMode:
@@ -64,9 +65,26 @@ class GrowthExperimentAnalystAgent:
     ) -> ExperimentAnalystReport:
         payload = self._normalize(question)
         mode = classify_experiment_mode(payload.question)
-        if mode == ExperimentMode.PROPOSE:
-            return self._propose(session, payload)
-        return self._analyze(session, payload)
+        with observation(
+            self.name,
+            input={"question": payload.question},
+            metadata={"mode": mode.value, "days": payload.days},
+            tags=["experiment", mode.value],
+        ) as span:
+            if mode == ExperimentMode.PROPOSE:
+                report = self._propose(session, payload)
+            else:
+                report = self._analyze(session, payload)
+            span.update(
+                output={
+                    "mode": report.mode.value,
+                    "decision_hint": (
+                        report.decision_hint.value if report.decision_hint else None
+                    ),
+                    "insufficient_evidence": report.insufficient_evidence,
+                }
+            )
+            return report
 
     def _normalize(
         self, question: ExperimentAnalystQuestion | str | None

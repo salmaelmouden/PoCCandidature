@@ -8,6 +8,7 @@ from app.agents.growth_data_analyst_agent import AnalystQuestion, GrowthDataAnal
 from app.agents.growth_data_analyst_agent.prompts import DEFAULT_PREMIUM_QUESTION
 from dashboard.db import db_session
 from dashboard.ui import data_provenance_banner, page_header, sidebar_filters
+from app.observability import flush_tracing
 
 EXAMPLE_QUESTIONS = [
     DEFAULT_PREMIUM_QUESTION,
@@ -43,6 +44,7 @@ if run:
             session,
             AnalystQuestion(question=question, days=days, channel=channel),
         )
+    flush_tracing()
 
     labels = set()
     for call in report.tool_calls:
