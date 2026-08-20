@@ -6,13 +6,13 @@ AI-native growth analytics, decision support, and automation for content-driven 
 
 ## Current status
 
-**Phase 6 — Strategist + Orchestrator** on branch `phase-6-strategist-orchestrator`.
+**Phase 7 — Experimentation** on branch `phase-7-experimentation`.
 
 ```bash
 make install   # once (venv is mounted into app containers)
 make up
 make status
-# open http://localhost:8501 → page "Orchestrator" (primary AI entry)
+# open http://localhost:8501 → Orchestrator or Experiments
 ```
 
 | Container | Role | Expected state |
@@ -167,3 +167,10 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
 - [x] `growth_orchestrator_agent` (routing + synthesis, ADR-004)
 - [x] Streamlit Orchestrator page
 - [x] Routing / strategist unit tests
+
+### Phase 7
+
+- [x] `experiment_analysis` skill (lift, CI, two-proportion z-test)
+- [x] `growth_experiment_analyst_agent` (analyze + propose)
+- [x] Orchestrator experiment route + Experiments page
+- [x] Skill / agent unit tests

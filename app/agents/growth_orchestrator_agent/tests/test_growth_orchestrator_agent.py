@@ -68,6 +68,8 @@ def test_classify_route() -> None:
         == RouteKind.ANALYST_THEN_STRATEGIST
     )
     assert classify_route("Recommend next steps") == RouteKind.ANALYST_THEN_STRATEGIST
+    assert classify_route("Did the YouTube CTA experiment work?") == RouteKind.EXPERIMENT
+    assert classify_route("How should we test the Premium drop?") == RouteKind.EXPERIMENT
 
 
 def test_orchestrator_analyst_only_skips_strategist(session) -> None:
@@ -102,3 +104,45 @@ def test_orchestrator_runs_strategist_for_action_questions(session) -> None:
     assert resp.strategy_report is not None
     assert resp.strategy_report.recommendations
     assert any(c.label == SemanticLabel.RECOMMENDATION for c in resp.claims)
+
+
+def test_orchestrator_routes_experiment_questions(session) -> None:
+    _seed(session)
+    from decimal import Decimal
+
+    from app.db.repositories import ExperimentRepository
+
+    exp_repo = ExperimentRepository(session)
+    exp = exp_repo.upsert_experiment(
+        experiment_key="syn_exp_youtube_cta",
+        name="[SYNTHETIC] YouTube CTA",
+        hypothesis="CTA helps",
+        status="completed",
+        primary_metric="activated_to_premium_rate",
+        is_synthetic=True,
+        dataset_label="synthetic_v1",
+    )
+    exp_repo.upsert_result(
+        experiment_id=exp.id,
+        variant="control",
+        users=4200,
+        conversions=378,
+        conversion_rate=Decimal("0.090000"),
+    )
+    exp_repo.upsert_result(
+        experiment_id=exp.id,
+        variant="treatment",
+        users=4180,
+        conversions=443,
+        conversion_rate=Decimal("0.105980"),
+    )
+    session.commit()
+
+    resp = GrowthOrchestratorAgent().run(
+        session,
+        OrchestratorQuestion(question="Did the YouTube CTA experiment work?", days=7),
+    )
+    assert resp.route == RouteKind.EXPERIMENT
+    assert resp.agents_called == ["growth_experiment_analyst_agent"]
+    assert resp.experiment_report is not None
+    assert resp.strategy_report is None
