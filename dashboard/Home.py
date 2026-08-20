@@ -73,4 +73,7 @@ else:
         hide_index=True,
     )
 
-st.info("Use the sidebar pages for Acquisition, Content, and Funnel detail.")
+st.info(
+    "Use the sidebar for Acquisition, Content, Funnel, Analyst, and Orchestrator "
+    "(primary AI ask)."
+)

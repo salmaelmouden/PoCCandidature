@@ -6,13 +6,13 @@ AI-native growth analytics, decision support, and automation for content-driven 
 
 ## Current status
 
-**Phase 5 — Data Analyst agent** on branch `phase-5-data-analyst`.
+**Phase 6 — Strategist + Orchestrator** on branch `phase-6-strategist-orchestrator`.
 
 ```bash
 make install   # once (venv is mounted into app containers)
 make up
 make status
-# open http://localhost:8501 → page "Analyst"
+# open http://localhost:8501 → page "Orchestrator" (primary AI entry)
 ```
 
 | Container | Role | Expected state |
@@ -160,3 +160,10 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
 - [x] Deterministic synthesizer (no LLM required for CI/demos)
 - [x] Streamlit Analyst page
 - [x] Agent unit tests
+
+### Phase 6
+
+- [x] `growth_strategist_agent` (RECOMMENDATION playbook grounded in analyst)
+- [x] `growth_orchestrator_agent` (routing + synthesis, ADR-004)
+- [x] Streamlit Orchestrator page
+- [x] Routing / strategist unit tests

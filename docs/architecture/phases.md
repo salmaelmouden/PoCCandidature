@@ -9,8 +9,8 @@ Do not implement later phases until the current phase is approved.
 | 2 | Analytics skills (funnel, content, anomaly) | Done |
 | 3 | YouTube ingestion | Done |
 | 4 | Dashboard (overview, acquisition, content, funnel) | Done |
-| 5 | Data Analyst agent | **Done (awaiting push)** |
-| 6 | Strategist + Orchestrator | Not started |
+| 5 | Data Analyst agent | Done |
+| 6 | Strategist + Orchestrator | **In progress** |
 | 7 | Experimentation skill + agent | Not started |
 | 8 | Langfuse observability | Not started |
 | 9 | n8n + report generation | Not started |
