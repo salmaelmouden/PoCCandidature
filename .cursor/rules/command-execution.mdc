@@ -1,0 +1,22 @@
+---
+description: Demander l’accord avant tests, builds et commandes réseau
+alwaysApply: true
+---
+
+# Commandes
+
+Demander l’autorisation avant : build, test, lint, migration, worker, déploiement ou diagnostic réseau.
+
+Commandes prévues (Phase 1+) :
+
+```bash
+# tests
+make test
+# or: pytest
+
+# lint / typecheck
+make lint
+# or: ruff check . && mypy app
+```
+
+Ne pas inventer de commande absente du Makefile / README. Se référer à `AGENTS.md`.

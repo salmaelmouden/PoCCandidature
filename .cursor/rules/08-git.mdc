@@ -1,0 +1,33 @@
+---
+description: Conventional commits and git safety for this repo
+alwaysApply: false
+---
+
+# Git
+
+## Conventional commits
+
+```
+feat:     new capability
+fix:      bug fix
+refactor: restructure without behavior change
+test:     tests only
+docs:     documentation
+chore:    tooling, config, scaffolding
+```
+
+Examples:
+
+- `feat: add funnel analysis skill`
+- `feat: add growth data analyst agent`
+- `test: add experiment analysis tests`
+- `docs: document agent architecture`
+- `chore: scaffold phase 0 engineering foundation`
+
+## Rules
+
+- Do not commit secrets.
+- Do not create meaningless commits.
+- Commit only when explicitly asked.
+- Do not push unless asked.
+- Prefer small, purposeful commits aligned to a phase or feature.

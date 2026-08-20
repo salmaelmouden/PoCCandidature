@@ -1,0 +1,35 @@
+---
+description: Testing conventions — behavior over coverage theater
+globs: "**/test_*.py,**/tests/**"
+alwaysApply: false
+---
+
+# Testing
+
+- Prefer pytest.
+- Test behavior, not implementation trivia.
+- Do not add tests only to raise coverage numbers.
+
+## Cover when relevant
+
+- Normal cases
+- Edge cases
+- Invalid input
+- Empty / missing data
+- Statistical calculations
+- Tool schemas
+- Agent routing
+
+## Placement
+
+- Skill / agent unit tests: colocated `tests/` under the component
+- Integration / API / cross-cutting: `tests/` at repo root
+
+## Rules
+
+- No real network in unit tests (mock external APIs).
+- No secrets in fixtures.
+- Synthetic data fixtures must be labelled as synthetic.
+- Ask before running the full test suite (see `AGENTS.md`).
+
+Skill: `.cursor/skills/testing/SKILL.md`

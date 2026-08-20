@@ -1,0 +1,39 @@
+---
+description: Python 3.12+ conventions for Growth Intelligence AI
+globs: "**/*.py"
+alwaysApply: false
+---
+
+# Python Conventions
+
+- Python 3.12+
+- Type hints on public functions and methods
+- Pydantic for boundaries (API, tools, agent I/O); dataclasses where appropriate
+- Prefer `pathlib.Path` over string paths
+- Explicit exceptions; no bare `except:`
+- Structured logging (no `print` for operational logs)
+
+## Naming
+
+| Kind | Style |
+|------|--------|
+| Classes | PascalCase |
+| Functions / variables | snake_case |
+| Constants | UPPER_SNAKE_CASE |
+| Files / modules | snake_case |
+| Private members | `_leading_underscore` |
+
+## Avoid
+
+- Wildcard imports (`from x import *`)
+- Unexplained magic numbers
+- Giant functions or classes
+- Mutable global state
+- Business logic in Streamlit pages or FastAPI route handlers
+
+## Prefer
+
+- Small, testable units
+- Explicit return types
+- Skills for deterministic calculations
+- Repository layer for persistence

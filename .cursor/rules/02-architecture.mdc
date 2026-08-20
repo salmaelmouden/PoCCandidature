@@ -1,0 +1,33 @@
+---
+description: Layered architecture rules — dependencies flow inward
+alwaysApply: true
+---
+
+# Architecture
+
+## Layers (top → bottom)
+
+Presentation → API / Dashboard → Application → Agents → Skills → Repositories → Database / External APIs
+
+## Hard rules
+
+- UI must not contain business logic.
+- Agents must not access the database directly.
+- Agents use explicit tools/skills only.
+- Skills must not depend on Streamlit.
+- Database access is encapsulated in repositories.
+- External APIs are isolated behind ingestion/integration components.
+- Schemas define boundaries between layers.
+- Application services coordinate use cases.
+- Domain / analytics logic remains independently testable.
+- Dependencies flow inward; avoid circular imports.
+
+## Before a new abstraction
+
+Ask: "Does this reduce complexity?" If not, do not create it.
+
+## Architectural violation
+
+Flag as **ARCHITECTURAL VIOLATION** when a change breaks these boundaries.
+
+Reference: `docs/architecture/`.

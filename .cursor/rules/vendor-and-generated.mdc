@@ -1,0 +1,14 @@
+---
+description: Ne pas modifier vendor, caches et artefacts générés
+alwaysApply: true
+---
+
+# Artefacts protégés
+
+Ne pas modifier :
+
+- `vendor/`, `node_modules/` ;
+- caches, logs, build output (`dist/`, `build/`, `.next/`, etc. selon le projet) ;
+- artefacts générés listés dans `AGENTS.md`.
+
+Ajouter une dépendance uniquement sur demande explicite via le gestionnaire du projet ; ne jamais patcher les deps installées.

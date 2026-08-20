@@ -1,0 +1,49 @@
+---
+description: Runtime skill contracts and naming for deterministic capabilities
+globs: "app/skills/**"
+alwaysApply: false
+---
+
+# Skills
+
+## Naming
+
+`<domain>_<capability>` — e.g. `funnel_analysis`, `youtube_ingestion`
+
+Avoid: `helper`, `utils`, `smart_analysis`, `data_tool`, `growth_magic`
+
+## Runtime skills
+
+1. `youtube_ingestion`
+2. `funnel_analysis`
+3. `content_analysis`
+4. `anomaly_detection`
+5. `experiment_analysis`
+6. `report_generation`
+
+## Directory layout
+
+```
+skills/<skill_name>/
+  skill.py  schemas.py  README.md  tests/
+```
+
+## Skills MUST
+
+- One responsibility
+- Typed inputs and outputs
+- Deterministic whenever possible
+- Independently testable
+- Explicit error handling
+- Documented (purpose, I/O, limitations)
+- Avoid hidden side effects
+
+## Skills MUST NOT
+
+- Depend on Streamlit or UI
+- Call LLMs for calculations that belong in Python
+- Bypass repositories for persistence
+
+Template: `docs/templates/skill-contract.md`
+
+Core split: **LLM = reasoning** · **Python = calculations** · **DB = truth**

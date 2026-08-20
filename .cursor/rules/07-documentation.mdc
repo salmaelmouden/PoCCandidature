@@ -1,0 +1,35 @@
+---
+description: Documentation conventions — purpose, decisions, usage
+globs: "docs/**,**/README.md"
+alwaysApply: false
+---
+
+# Documentation
+
+Document:
+
+- purpose
+- architecture
+- decisions (ADRs)
+- usage
+- limitations
+- examples
+
+Avoid documenting obvious implementation details.
+
+## Structure
+
+```
+docs/
+  architecture/  agents/  skills/  conventions/  decisions/  templates/  plans/
+```
+
+## Requirements
+
+- Every runtime agent and skill has a README.
+- Important architecture choices use ADRs (`docs/decisions/`).
+- Prefer linking to contracts/templates over duplicating prose.
+- Update docs when behavior or contracts change.
+
+Templates: `docs/templates/`
+ADR template: `docs/templates/adr.md`

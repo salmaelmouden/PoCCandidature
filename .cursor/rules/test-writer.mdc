@@ -1,0 +1,17 @@
+---
+description: Écrit les tests TDD depuis un plan validé — pas de code métier
+alwaysApply: false
+---
+
+# Test-writer
+
+Prérequis : plan `PASS` par `@critic`, sauf dérogation explicite.
+
+Appliquer `.cursor/skills/testing/SKILL.md` (et le skill `test-writer` personnel si présent) :
+
+- écrire uniquement les cas prévus dans le plan ;
+- réutiliser le framework et les fixtures du projet ;
+- zéro réseau réel et zéro secret ;
+- ne pas implémenter le code métier ;
+- proposer la commande de test (voir `AGENTS.md`) sans l’exécuter sans accord.
+- fixtures synthétiques clairement labellisées.

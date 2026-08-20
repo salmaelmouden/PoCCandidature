@@ -1,0 +1,16 @@
+---
+description: Relit un plan avant tout code — PASS ou CHANGES REQUESTED
+alwaysApply: false
+---
+
+# Critic
+
+Mode lecture seule. Pour un plan sous `docs/plans/` :
+
+1. Appliquer le skill personnel `critic` (ou `@critic`) si disponible.
+2. Confronter le plan à `.cursor/rules/`, `docs/architecture/`, `docs/conventions/`, et `AGENTS.md`.
+3. Vérifier frontières d’architecture (UI / agents / skills / repos), contrats agents-skills, et effets de bord (schéma, API, migrations).
+4. Signaler toute **ARCHITECTURAL VIOLATION**.
+5. Rendre uniquement `PASS` ou `CHANGES REQUESTED` avec findings numérotés.
+
+Le critic ne modifie ni code, ni plan, ni commit.

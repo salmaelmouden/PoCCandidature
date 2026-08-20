@@ -1,0 +1,29 @@
+---
+description: Security — secrets, agent data access, validation
+alwaysApply: true
+---
+
+# Security
+
+## Never commit or paste
+
+- API keys, tokens, passwords, secrets
+- Private user data
+- `.env` files with real values
+
+## Credentials
+
+- Use environment variables (see `.env.example` for names only).
+- Never hard-code `YOUTUBE_API_KEY`, LLM keys, DB passwords, or Langfuse keys.
+
+## Agents and data
+
+- Agents must not have unrestricted database access.
+- Validate all tool inputs against schemas.
+- Sanitize external / ingested data before persistence.
+- Do not log secrets or PII in Langfuse or application logs.
+
+## Portfolio integrity
+
+- No Finary private APIs, logos, or proprietary datasets.
+- Label synthetic data clearly; never claim it is production fintech data.

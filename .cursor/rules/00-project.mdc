@@ -1,0 +1,35 @@
+---
+description: Growth Intelligence AI project constitution — mission and principles
+alwaysApply: true
+---
+
+# Project Constitution
+
+**Mission:** Build a reliable AI-native growth intelligence system.
+
+**Product:** Growth Intelligence AI — AI-native growth analytics, decision support, and automation for content-driven acquisition.
+
+**Scope:** Independent portfolio project. Never use Finary logos, private APIs, private datasets, or proprietary data. Synthetic data must be clearly labelled. Never present synthetic data as real company data.
+
+## Principles
+
+1. Correctness over cleverness.
+2. Deterministic code over LLM reasoning when possible.
+3. Agents reason; skills execute.
+4. Database is the source of truth.
+5. Every important AI behavior must be observable.
+6. Important AI behavior must be evaluable.
+7. Explicit contracts over implicit behavior.
+8. Small components over unnecessary abstraction.
+9. No unnecessary agents.
+10. No unrestricted data access.
+11. Never invent business data.
+12. Do not modify unrelated components.
+13. Prefer simple solutions.
+14. Document important architectural decisions.
+
+## Phase discipline
+
+Build in phases. Do not implement later-phase application code until the current phase is approved.
+
+Semantic output labels for AI responses: **FACT** | **INTERPRETATION** | **RECOMMENDATION**.

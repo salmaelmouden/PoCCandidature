@@ -1,0 +1,49 @@
+---
+description: Runtime agent contracts, naming, and behavior rules
+globs: "app/agents/**"
+alwaysApply: false
+---
+
+# Agents
+
+## Naming
+
+- Directory / identity: `<domain>_<role>_agent` (e.g. `growth_data_analyst_agent`)
+- Class: `GrowthDataAnalystAgent`
+- Types: Orchestrator | Analyst | Strategist | Operator
+
+## Allowed agents (do not add casually)
+
+1. `growth_orchestrator_agent`
+2. `growth_data_analyst_agent`
+3. `growth_strategist_agent`
+4. `growth_experiment_analyst_agent`
+
+## Contract (required per agent)
+
+identity, purpose, responsibility, inputs, outputs, tools, constraints, failure behavior, observability, evaluation cases
+
+## Directory layout
+
+```
+agents/<agent_name>/
+  agent.py  prompts.py  schemas.py  tools.py  config.py  README.md  tests/
+```
+
+## Agents MUST
+
+- Use structured tools and deterministic skills for calculations
+- Respect tool schemas; produce structured outputs
+- Distinguish FACT / INTERPRETATION / RECOMMENDATION
+- State when evidence is insufficient
+- Be observable and evaluable
+
+## Agents MUST NOT
+
+- Invent metrics or fabricate DB results
+- Execute arbitrary SQL or access unrestricted data
+- Duplicate specialist logic in the orchestrator
+- Expose chain-of-thought
+- Exist when a deterministic function is enough
+
+Template: `docs/templates/agent-contract.md`
