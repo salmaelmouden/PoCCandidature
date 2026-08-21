@@ -18,6 +18,7 @@ Do not implement later phases until the current phase is approved.
 | 11 | LLM content classification | Done |
 | 12 | Public-signal analysis | Done |
 | 13 | Catalogue insights + demo surface | Done |
+| 14 | Catalogue refresh + Railway deploy | Done |
 
 ## Branching convention
 
@@ -26,5 +27,5 @@ Each phase is developed on `phase-N-<slug>`, committed, and pushed. Merge to `ma
 ## MVP priority
 
 - **P0:** foundation, Postgres, synthetic data, funnel/content analysis, dashboard, analyst, strategist, orchestrator
-- **P1:** YouTube, experiment agent, n8n, classification, public signals, insights
+- **P1:** YouTube, experiment agent, n8n, classification, public signals, insights, refresh, deploy
 - **P2:** Langfuse, evaluation framework, polish
