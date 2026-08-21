@@ -6,6 +6,10 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+class MissingDatabaseUrlError(RuntimeError):
+    """Raised when a production deploy has no database configured."""
+
+
 def normalize_database_url(url: str) -> str:
     """
     Force the psycopg (v3) driver on a provider-supplied connection string.
@@ -94,6 +98,17 @@ class Settings(BaseSettings):
     def sqlalchemy_database_url(self) -> str:
         if self.database_url:
             return normalize_database_url(self.database_url)
+        if self.app_env.lower() in {"production", "prod"}:
+            # Falling back to the local-dev default in production produces a
+            # "connection refused to 127.0.0.1:5434" buried in a healthcheck
+            # timeout. Say what is actually missing instead.
+            raise MissingDatabaseUrlError(
+                "DATABASE_URL is not set and APP_ENV is production. Managed hosts do "
+                "not inject it automatically — on Railway add an explicit reference: "
+                "DATABASE_URL=${{Postgres.DATABASE_URL}} (use your Postgres service's "
+                "name). Refusing to fall back to "
+                f"{self.postgres_host}:{self.postgres_port}."
+            )
         return (
             f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"

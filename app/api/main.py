@@ -32,6 +32,23 @@ class HealthResponse(BaseModel):
     service: str = "growth-intelligence-api"
 
 
+class RootResponse(BaseModel):
+    service: str = "growth-intelligence-api"
+    version: str
+    docs: str = "/docs"
+    health: str = "/health"
+
+
+@app.get("/", response_model=RootResponse)
+def root() -> RootResponse:
+    """Say what this is.
+
+    Without this, the bare domain 404s — which reads as a broken deploy when the
+    service is fine and simply has no route at `/`.
+    """
+    return RootResponse(version=app.version)
+
+
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     """Health check endpoint - read-only, no DB access."""
