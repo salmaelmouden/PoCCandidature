@@ -29,9 +29,9 @@ COPY scripts ./scripts
 # third parties and should phone home as little as possible.
 ENV STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
 
-EXPOSE 8501
+EXPOSE 8080
 
-# The web service. The refresher runs the same image with a different start
-# command (see docs/guides/deploy-railway.md).
-# $PORT is injected by the platform; 8501 is the local fallback.
-CMD ["sh", "-c", "alembic upgrade head && exec streamlit run dashboard/Home.py --server.port ${PORT:-8501} --server.address 0.0.0.0 --server.headless true"]
+# FastAPI/Uvicorn server (default for Railway deployment).
+# $PORT is injected by the platform; 8080 is the local fallback.
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.api.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
+
