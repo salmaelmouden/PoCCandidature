@@ -216,3 +216,11 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
 - [x] ADR-008 — where an LLM may write to the database (amends ADR-002)
 - [x] Fixes: API key no longer logged, blank `.env` placeholders no longer override
       defaults, corporate TLS interception configurable (`CA_BUNDLE_PATH`)
+
+### Phase 12
+
+- [x] `public_signal_analysis` skill — cohort-normalised reach index + engagement rate,
+      reported per format (the catalogue is 52 % Shorts)
+- [x] `services/public_signals.py` loader (excludes fallback-labelled rows)
+- [x] `make public-report` — evidence table, facts only
+- [x] Coverage reported explicitly: 926/952 videos indexed, 26 excluded as thin cohorts
