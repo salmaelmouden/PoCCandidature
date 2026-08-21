@@ -30,23 +30,36 @@ Cost is roughly $5/month on the Hobby plan; the refresher is idle most of the ti
    → pick this repository and the branch you want.
 2. In the project, **New** → **Database** → **Add PostgreSQL**.
 
-Railway injects `DATABASE_URL` into every service in the project. The app rewrites
-its scheme to the psycopg 3 driver on the way in — managed providers hand out
-`postgres://`, which SQLAlchemy would otherwise route to psycopg2 (not installed).
+> **Railway does not inject `DATABASE_URL` into your other services.** The variable
+> exists on the Postgres service only; every service that needs it must reference it
+> explicitly (step 2). Skipping this is the most common way this deploy fails, and it
+> fails confusingly: without the variable the app falls back to its local-dev default
+> and the logs show `connection to server at 127.0.0.1, port 5434 failed` inside a
+> healthcheck timeout. The app now refuses to start in that case with an explicit
+> message instead.
+
+Whatever the provider hands out, the app rewrites the scheme to the psycopg 3
+driver on the way in — managed hosts emit `postgres://`, which SQLAlchemy would
+otherwise route to psycopg2 (not installed).
 
 ## 2. Configure the dashboard service
 
 The service created from the repo is the web one. Under **Variables**:
 
 ```
+DATABASE_URL=${{Postgres.DATABASE_URL}}
 YOUTUBE_API_KEY=<your key>
 YOUTUBE_CHANNEL_ID=UCRCCAnVyzDTcqNYh0pDcq7Q
 ANTHROPIC_API_KEY=<your key>
 APP_ENV=production
 ```
 
-Leave `DATABASE_URL` alone — Railway manages it. Leave `CA_BUNDLE_PATH` unset:
-it exists only to work around the corporate proxy locally.
+`${{Postgres.DATABASE_URL}}` is a Railway variable reference, not a literal —
+replace `Postgres` with your database service's actual name as shown on its card
+in the project canvas. Railway resolves it at deploy time.
+
+Leave `CA_BUNDLE_PATH` unset: it exists only to work around the corporate proxy
+locally, and pointing it at a path that does not exist in the image breaks TLS.
 
 Under **Settings → Networking**, click **Generate Domain**. That URL is the link
 you share.
@@ -65,8 +78,16 @@ Streamlit on `$PORT`, and `railway.json` points the health check at
   ```
 - **Networking:** no domain — it has no HTTP server.
 
-Give it the same variables as the dashboard (`YOUTUBE_API_KEY`,
-`YOUTUBE_CHANNEL_ID`, `ANTHROPIC_API_KEY`).
+Give it the same variables as the dashboard — including its own
+`DATABASE_URL=${{Postgres.DATABASE_URL}}` reference, which is not inherited:
+
+```
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+YOUTUBE_API_KEY=<your key>
+YOUTUBE_CHANNEL_ID=UCRCCAnVyzDTcqNYh0pDcq7Q
+ANTHROPIC_API_KEY=<your key>
+APP_ENV=production
+```
 
 Do not let this service run migrations: the dashboard already does, and two
 concurrent `alembic upgrade` runs against one database can collide.
@@ -123,6 +144,8 @@ which the refresher backs off and the page goes stale.
 
 | Symptom | Cause |
 |---|---|
+| Healthcheck fails; logs show `connection to server at 127.0.0.1, port 5434 failed` | `DATABASE_URL` is missing on **that** service — add the `${{Postgres.DATABASE_URL}}` reference. It is per-service, never inherited |
+| `DATABASE_URL is not set and APP_ENV is production` | Same cause, caught early — follow the message |
 | `ModuleNotFoundError: psycopg2` | `DATABASE_URL` reached SQLAlchemy unrewritten — check `app/config/settings.py` is on the deployed revision |
 | Health check fails, logs show Streamlit started | The app is not bound to `$PORT` — check the start command was not overridden |
 | `YOUTUBE_API_KEY is required — nothing to refresh` | The variable is missing on the **refresher** service specifically |

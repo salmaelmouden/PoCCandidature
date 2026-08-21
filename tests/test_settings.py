@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from app.config.settings import Settings, normalize_database_url
+from app.config.settings import (
+    MissingDatabaseUrlError,
+    Settings,
+    normalize_database_url,
+)
 
 
 @pytest.mark.parametrize(
@@ -52,6 +56,37 @@ def test_settings_builds_url_from_parts_when_database_url_absent() -> None:
     assert settings.sqlalchemy_database_url == (
         "postgresql+psycopg://growth:growth@localhost:5434/growth_intelligence"
     )
+
+
+def test_production_without_database_url_fails_loudly() -> None:
+    """
+    Managed hosts do not inject DATABASE_URL. Falling back to the local default
+    surfaced as "connection refused to 127.0.0.1:5434" inside a healthcheck
+    timeout, which points at the wrong problem.
+    """
+    settings = Settings(DATABASE_URL="", APP_ENV="production")
+
+    with pytest.raises(MissingDatabaseUrlError, match="DATABASE_URL"):
+        _ = settings.sqlalchemy_database_url
+
+
+@pytest.mark.parametrize("env", ["production", "PRODUCTION", "prod"])
+def test_production_guard_is_case_insensitive(env: str) -> None:
+    with pytest.raises(MissingDatabaseUrlError):
+        _ = Settings(DATABASE_URL="", APP_ENV=env).sqlalchemy_database_url
+
+
+def test_development_still_falls_back_to_local_postgres() -> None:
+    """The guard must not break local work, where the fallback is the point."""
+    settings = Settings(DATABASE_URL="", APP_ENV="development")
+
+    assert settings.sqlalchemy_database_url.startswith("postgresql+psycopg://")
+
+
+def test_production_with_database_url_is_fine() -> None:
+    settings = Settings(DATABASE_URL="postgres://u:p@h:5432/db", APP_ENV="production")
+
+    assert settings.sqlalchemy_database_url == "postgresql+psycopg://u:p@h:5432/db"
 
 
 def test_blank_placeholders_are_treated_as_unset() -> None:
