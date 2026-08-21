@@ -33,7 +33,7 @@ EXPOSE 8080
 
 # FastAPI/Uvicorn server (default for Railway deployment).
 # $PORT is injected by the platform; 8080 is the local fallback.
-# Use --loop uvloop for better event loop stability with psycopg3.
-CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.api.main:app --host 0.0.0.0 --port ${PORT:-8080} --loop uvloop"]
+# Use --workers 2 with sync workers to avoid async/psycopg3 compatibility issues.
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.api.main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 2"]
 
 
