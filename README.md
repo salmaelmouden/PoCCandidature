@@ -10,19 +10,21 @@ AI-native growth analytics, decision support, and automation for content-driven 
 
 ## Current status
 
-**Phase 13 complete** — live **Catalogue public** page + insights narrative; merge to `main`.
+**Phase 14** — scheduled catalogue refresh + Railway deployment.
 
 ```bash
-make install   # once (venv is mounted into app containers)
-make up        # core stack (n8n optional — corporate Docker Hub often blocked)
+make install      # once (venv is mounted into app containers)
+make up           # core stack (n8n optional — corporate Docker Hub often blocked)
 make status
-make eval      # agent evaluation suite
+make eval         # agent evaluation suite
 make public-report
+make refresh-loop # keep the catalogue current (every 15 min)
 # Dashboard: http://localhost:8501  (Catalogue public = real YouTube track)
 # API docs:  http://localhost:8000/docs
 # n8n UI:    make n8n-build && make up-n8n
 # Demo:      docs/guides/demo-script.md
 # Narrative: docs/insights/catalogue-finary.html
+# Deploy:    docs/guides/deploy-railway.md
 ```
 
 | Container | Role | Expected state |
@@ -235,3 +237,15 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
 - [x] Narrative HTML `docs/insights/catalogue-finary.html`
 - [x] Demo script covers synthetic funnel **and** public catalogue tracks
 - [x] Docs / phases synced
+
+### Phase 14
+
+- [x] `scripts/refresh_catalogue.py` — ingest + classify, once or on a loop, with
+      exponential backoff and a graceful SIGTERM stop (`make refresh` / `make refresh-loop`)
+- [x] `ingest_runs` table (migration `003`) — freshness is a property of the run,
+      not of the data: a same-day re-ingest updates rows, and unchanged counters
+      write nothing at all
+- [x] Page separates **last checked** from **last changed**, with minute resolution
+- [x] `Dockerfile` + `railway.json` + `docs/guides/deploy-railway.md`
+- [x] `DATABASE_URL` from managed providers rewritten to the psycopg 3 driver
+- [x] `YouTubeClient` honours `CA_BUNDLE_PATH` (previously only the Anthropic client did)
