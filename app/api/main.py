@@ -2,11 +2,22 @@
 
 from __future__ import annotations
 
+import logging
+import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+
+# Enable detailed logging to catch crashes
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stdout,
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Growth Intelligence AI API",
@@ -22,20 +33,48 @@ class HealthResponse(BaseModel):
     service: str = "growth-intelligence-api"
 
 
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log all requests and catch any exceptions."""
+    try:
+        logger.info(f"Incoming request: {request.method} {request.url.path}")
+        response = await call_next(request)
+        logger.info(f"Response: {response.status_code}")
+        return response
+    except Exception as e:
+        logger.error(f"Exception handling request: {e}", exc_info=True)
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
+    logger.debug("Health check called")
     return HealthResponse()
 
 
 @app.get("/")
 def root():
-    return {"message": "API is running"}
+    logger.info("Root endpoint called")
+    return {"message": "API is running", "timestamp": datetime.now(timezone.utc).isoformat()}
+
+
+@app.get("/debug")
+def debug_info():
+    """Debug endpoint to check app state."""
+    logger.info("Debug endpoint called")
+    return {
+        "status": "ok",
+        "python_version": sys.version,
+        "app": str(app),
+    }
 
 
 # Import heavy dependencies only when needed
 try:
+    logger.info("Attempting to import reports module...")
     from app.db.session import session_scope
     from app.services.reports import build_weekly_report, write_report_markdown
+    logger.info("Reports module imported successfully")
 
     class WeeklyReportResponse(BaseModel):
         title: str
@@ -59,6 +98,7 @@ try:
         ),
     ) -> WeeklyReportResponse:
         """Generate the weekly growth report for n8n HTTP Request nodes."""
+        logger.info(f"Weekly report requested: days={days}, channel={channel}")
         with session_scope() as session:
             report = build_weekly_report(
                 session,
@@ -87,5 +127,9 @@ try:
         )
 
 except ImportError as e:
-    print(f"Warning: Could not import reports module: {e}")
+    logger.warning(f"Could not import reports module: {e}", exc_info=True)
+except Exception as e:
+    logger.error(f"Error setting up reports endpoint: {e}", exc_info=True)
+
+logger.info("FastAPI app initialized successfully")
 
