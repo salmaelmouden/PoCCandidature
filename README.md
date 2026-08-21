@@ -10,17 +10,19 @@ AI-native growth analytics, decision support, and automation for content-driven 
 
 ## Current status
 
-**Phase 11 — LLM content classification** on branch `phase-11-content-classification`.
+**Phase 13 complete** — live **Catalogue public** page + insights narrative; merge to `main`.
 
 ```bash
 make install   # once (venv is mounted into app containers)
 make up        # core stack (n8n optional — corporate Docker Hub often blocked)
 make status
 make eval      # agent evaluation suite
-# Dashboard: http://localhost:8501
+make public-report
+# Dashboard: http://localhost:8501  (Catalogue public = real YouTube track)
 # API docs:  http://localhost:8000/docs
 # n8n UI:    make n8n-build && make up-n8n
 # Demo:      docs/guides/demo-script.md
+# Narrative: docs/insights/catalogue-finary.html
 ```
 
 | Container | Role | Expected state |
@@ -224,3 +226,12 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
 - [x] `services/public_signals.py` loader (excludes fallback-labelled rows)
 - [x] `make public-report` — evidence table, facts only
 - [x] Coverage reported explicitly: 926/952 videos indexed, 26 excluded as thin cohorts
+
+### Phase 13
+
+- [x] Streamlit **Catalogue public** page — five readings whose every number is
+      derived from the live report, so the narrative cannot drift after an ingest
+- [x] `dashboard/catalogue_view.py` — pure chart/table helpers, unit-tested
+- [x] Narrative HTML `docs/insights/catalogue-finary.html`
+- [x] Demo script covers synthetic funnel **and** public catalogue tracks
+- [x] Docs / phases synced

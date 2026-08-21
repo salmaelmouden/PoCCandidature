@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from sqlalchemy import select
+from dataclasses import dataclass
+from datetime import date, datetime
+
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db.models import Video, VideoClassification, VideoDailyMetric
@@ -14,6 +17,69 @@ from app.skills.public_signal_analysis import (
 )
 
 FALLBACK_BACKEND = "keyword_fallback"
+
+
+@dataclass(frozen=True)
+class CatalogueFreshness:
+    """How current the underlying snapshot is — shown, not assumed."""
+
+    videos: int
+    classified: int
+    last_metric_date: date | None
+    last_ingest_at: datetime | None
+    last_classified_at: datetime | None
+
+    @property
+    def unclassified(self) -> int:
+        return max(0, self.videos - self.classified)
+
+
+def get_catalogue_freshness(
+    session: Session,
+    *,
+    dataset_label: str = "youtube_api",
+    version: str = CLASSIFICATION_VERSION,
+) -> CatalogueFreshness:
+    """Read the ingest/classification watermarks so the page can show its own age."""
+    videos = (
+        session.scalar(
+            select(func.count(Video.id)).where(Video.dataset_label == dataset_label)
+        )
+        or 0
+    )
+    classified = (
+        session.scalar(
+            select(func.count(VideoClassification.id))
+            .join(Video, Video.id == VideoClassification.video_id)
+            .where(
+                Video.dataset_label == dataset_label,
+                VideoClassification.version == version,
+            )
+        )
+        or 0
+    )
+    last_metric_date = session.scalar(
+        select(func.max(VideoDailyMetric.metric_date))
+        .join(Video, Video.id == VideoDailyMetric.video_id)
+        .where(Video.dataset_label == dataset_label)
+    )
+    last_ingest_at = session.scalar(
+        select(func.max(VideoDailyMetric.created_at))
+        .join(Video, Video.id == VideoDailyMetric.video_id)
+        .where(Video.dataset_label == dataset_label)
+    )
+    last_classified_at = session.scalar(
+        select(func.max(VideoClassification.classified_at)).where(
+            VideoClassification.version == version
+        )
+    )
+    return CatalogueFreshness(
+        videos=videos,
+        classified=classified,
+        last_metric_date=last_metric_date,
+        last_ingest_at=last_ingest_at,
+        last_classified_at=last_classified_at,
+    )
 
 
 def load_public_signals(

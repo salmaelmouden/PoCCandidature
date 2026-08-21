@@ -64,4 +64,4 @@ videos + video_daily_metrics + video_classifications
 - [x] `services/public_signals.py` loader, excludes `keyword_fallback` rows
 - [x] `scripts/public_signal_report.py` + `make public-report`
 - [x] Skill contract README documenting both formulas and the observability boundary
-- [ ] Pick the 3 findings (manual — Phase 13)
+- [x] Pick the findings (manual — Phase 13)

@@ -18,16 +18,21 @@ Phase discipline: do not implement later-phase application code until the curren
 ## Project commands
 
 ```bash
-make up              # Docker: postgres + migrate + seed + dashboard
+make up              # Docker: postgres + migrate + seed + dashboard (+ api)
 make status          # docker compose ps -a
 make logs            # follow container logs
 make down            # stop stack
-make install         # local .venv (optional)
+make install         # local .venv
 make migrate         # local alembic
 make seed            # local seed
 make ingest-youtube  # YouTube Data API ingest (needs API key)
+make classify        # LLM (or fallback) topic + hook labels
+make public-report   # public-signal evidence table (CLI)
 make dashboard       # local Streamlit
+make api             # local FastAPI
+make report          # weekly markdown report
 make test            # pytest -q
+make eval            # agent evaluation suite
 make lint            # ruff
 ```
 
@@ -40,3 +45,4 @@ Preferred path: **`make up`** then open http://localhost:8501 and use **`make st
 - Do not expand scope without an explicit ask.
 - Do not invent business metrics or present synthetic data as real company data.
 - No Finary private APIs, logos, or proprietary datasets.
+- Never infer signups or conversion from public YouTube stats.

@@ -5,7 +5,7 @@ Do not implement later phases until the current phase is approved.
 | Phase | Name | Status |
 |-------|------|--------|
 | 0 | Engineering foundation | Done |
-| 1 | Data foundation (Postgres, models, synthetic data) | Done (Docker seeded) |
+| 1 | Data foundation (Postgres, models, synthetic data) | Done |
 | 2 | Analytics skills (funnel, content, anomaly) | Done |
 | 3 | YouTube ingestion | Done |
 | 4 | Dashboard (overview, acquisition, content, funnel) | Done |
@@ -14,7 +14,10 @@ Do not implement later phases until the current phase is approved.
 | 7 | Experimentation skill + agent | Done |
 | 8 | Langfuse observability | Done |
 | 9 | n8n + report generation | Done |
-| 10 | Evaluation + polish | **Done (awaiting push)** |
+| 10 | Evaluation + polish | Done |
+| 11 | LLM content classification | Done |
+| 12 | Public-signal analysis | Done |
+| 13 | Catalogue insights + demo surface | Done |
 
 ## Branching convention
 
@@ -23,5 +26,5 @@ Each phase is developed on `phase-N-<slug>`, committed, and pushed. Merge to `ma
 ## MVP priority
 
 - **P0:** foundation, Postgres, synthetic data, funnel/content analysis, dashboard, analyst, strategist, orchestrator
-- **P1:** YouTube, experiment agent, n8n
-- **P2:** Langfuse, evaluation framework, advanced anomalies, polish
+- **P1:** YouTube, experiment agent, n8n, classification, public signals, insights
+- **P2:** Langfuse, evaluation framework, polish
