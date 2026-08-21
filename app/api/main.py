@@ -7,13 +7,12 @@ import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Query
 from pydantic import BaseModel, Field
 
-# Enable detailed logging to catch crashes
+# Enable logging
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     stream=sys.stdout,
 )
@@ -33,40 +32,15 @@ class HealthResponse(BaseModel):
     service: str = "growth-intelligence-api"
 
 
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    """Log all requests and catch any exceptions."""
-    try:
-        logger.info(f"Incoming request: {request.method} {request.url.path}")
-        response = await call_next(request)
-        logger.info(f"Response: {response.status_code}")
-        return response
-    except Exception as e:
-        logger.error(f"Exception handling request: {e}", exc_info=True)
-        return JSONResponse({"error": str(e)}, status_code=500)
-
-
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
-    logger.debug("Health check called")
     return HealthResponse()
 
 
 @app.get("/")
 def root():
-    logger.info("Root endpoint called")
-    return {"message": "API is running", "timestamp": datetime.now(timezone.utc).isoformat()}
-
-
-@app.get("/debug")
-def debug_info():
-    """Debug endpoint to check app state."""
-    logger.info("Debug endpoint called")
-    return {
-        "status": "ok",
-        "python_version": sys.version,
-        "app": str(app),
-    }
+    """Simple test endpoint with no database access."""
+    return {"message": "API is running"}
 
 
 # Import heavy dependencies only when needed
