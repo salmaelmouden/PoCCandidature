@@ -14,8 +14,14 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# psycopg[binary] and every other dependency ship wheels for slim, so no compiler
-# toolchain is needed — keep the image small and the build fast.
+# psycopg[native] compiles its C extension against libpq at build time, so the
+# client library (and a compiler toolchain) must be present in the image before
+# installing Python dependencies.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      build-essential \
+      libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY pyproject.toml README.md ./
 COPY app ./app
 COPY dashboard ./dashboard
