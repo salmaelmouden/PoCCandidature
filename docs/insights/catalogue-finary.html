@@ -1,0 +1,1152 @@
+<title>Lecture du catalogue Finary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+:root {
+  color-scheme: light;
+  --paper:        #f6f7f9;
+  --surface:      #fdfdfe;
+  --surface-sunk: #eceef2;
+  --ink:          #14171c;
+  --ink-2:        #4a5462;
+  --ink-3:        #79848f;
+  --rule:         #d9dde4;
+  --rule-soft:    #e6e9ee;
+  --accent:       #1b3a57;
+  --accent-soft:  #e3eaf1;
+  --series-short: #2a78d6;
+  --series-long:  #eb6834;
+  --flag:         #8a5a00;
+  --flag-bg:      #f7efdc;
+
+  --measure: 68ch;
+  --step--1: 0.815rem;
+  --step-0:  1rem;
+  --step-1:  1.24rem;
+  --step-2:  1.55rem;
+  --step-3:  2.05rem;
+  --step-4:  2.9rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper:        #12151a;
+    --surface:      #191d24;
+    --surface-sunk: #0d1015;
+    --ink:          #eef1f5;
+    --ink-2:        #a8b2be;
+    --ink-3:        #78828e;
+    --rule:         #2c333d;
+    --rule-soft:    #222831;
+    --accent:       #9dc3e6;
+    --accent-soft:  #1b2733;
+    --series-short: #3987e5;
+    --series-long:  #d95926;
+    --flag:         #e0b355;
+    --flag-bg:      #2a2213;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper:        #12151a;
+  --surface:      #191d24;
+  --surface-sunk: #0d1015;
+  --ink:          #eef1f5;
+  --ink-2:        #a8b2be;
+  --ink-3:        #78828e;
+  --rule:         #2c333d;
+  --rule-soft:    #222831;
+  --accent:       #9dc3e6;
+  --accent-soft:  #1b2733;
+  --series-short: #3987e5;
+  --series-long:  #d95926;
+  --flag:         #e0b355;
+  --flag-bg:      #2a2213;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Spectral, Georgia, "Times New Roman", serif;
+  font-size: var(--step-0);
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 0 1.5rem 6rem;
+}
+
+.col {
+  max-width: var(--measure);
+}
+
+h1, h2, h3 {
+  font-weight: 700;
+  line-height: 1.14;
+  text-wrap: balance;
+  margin: 0;
+}
+
+.eyebrow {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: var(--step--1);
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ---------- masthead ---------- */
+
+.masthead {
+  border-bottom: 2px solid var(--ink);
+  padding: 3.5rem 0 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.masthead h1 {
+  font-size: var(--step-4);
+  letter-spacing: -0.02em;
+  margin: 0.7rem 0 0.9rem;
+}
+
+.standfirst {
+  max-width: var(--measure);
+  font-size: var(--step-1);
+  color: var(--ink-2);
+  margin: 0 0 1.6rem;
+}
+
+.byline {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: var(--step--1);
+  color: var(--ink-3);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.4rem;
+  line-height: 1.5;
+}
+
+.byline b { color: var(--ink-2); font-weight: 500; }
+
+/* ---------- disclaimer ---------- */
+
+.disclaimer {
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  background: var(--surface);
+  padding: 1rem 1.2rem;
+  margin: 0 0 3.5rem;
+  max-width: var(--measure);
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: var(--step--1);
+  line-height: 1.62;
+  color: var(--ink-2);
+}
+
+.disclaimer b { color: var(--ink); font-weight: 600; }
+
+/* ---------- sections ---------- */
+
+section { margin: 0 0 4.5rem; }
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 1.1rem;
+  margin-bottom: 1.4rem;
+}
+
+.marker {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: var(--step-1);
+  font-weight: 500;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+.section-head h2 {
+  font-size: var(--step-2);
+  letter-spacing: -0.01em;
+  flex: 1 1 22rem;
+}
+
+.strength {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 0.22rem 0.55rem;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  flex: none;
+  white-space: nowrap;
+}
+
+.strength.solid { color: var(--accent); }
+.strength.tentative { color: var(--flag); background: var(--flag-bg); }
+
+p { margin: 0 0 1.05rem; max-width: var(--measure); }
+
+.lede { font-size: var(--step-1); color: var(--ink-2); }
+
+strong { font-weight: 600; }
+
+.num {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.94em;
+  font-weight: 500;
+}
+
+/* ---------- prescription block ---------- */
+
+.rx {
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  margin: 1.6rem 0 0;
+  max-width: var(--measure);
+}
+
+.rx > div {
+  display: grid;
+  grid-template-columns: 11rem 1fr;
+  gap: 1rem;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.rx > div:last-child { border-bottom: 0; }
+
+.rx dt {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: var(--step--1);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0;
+  padding-top: 0.16rem;
+}
+
+.rx dd { margin: 0; font-size: 0.96rem; color: var(--ink-2); }
+
+@media (max-width: 34rem) {
+  .rx > div { grid-template-columns: 1fr; gap: 0.25rem; }
+}
+
+/* ---------- KPI row ---------- */
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  margin: 1.8rem 0 0;
+}
+
+.kpi { background: var(--surface); padding: 1.15rem 1.2rem; }
+
+.kpi .k-label {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: var(--step--1);
+  color: var(--ink-3);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.kpi .k-value {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: var(--step-3);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  display: block;
+}
+
+.kpi .k-note {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: var(--step--1);
+  color: var(--ink-2);
+  display: block;
+  margin-top: 0.5rem;
+}
+
+/* ---------- figures ---------- */
+
+figure {
+  margin: 2rem 0 0;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+}
+
+.fig-head {
+  padding: 1.1rem 1.3rem 0.5rem;
+  border-bottom: 1px solid var(--rule-soft);
+  padding-bottom: 0.9rem;
+}
+
+.fig-title {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 1.02rem;
+  font-weight: 600;
+  margin: 0 0 0.3rem;
+  color: var(--ink);
+}
+
+.fig-sub {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: var(--step--1);
+  color: var(--ink-3);
+  margin: 0;
+  max-width: 60ch;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.3rem;
+  padding: 0.8rem 1.3rem 0;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+
+.legend span { display: inline-flex; align-items: center; gap: 0.42rem; }
+
+.swatch {
+  width: 11px; height: 11px; border-radius: 50%;
+  border: 2px solid var(--surface);
+  outline: 1px solid transparent;
+  flex: none;
+}
+
+.swatch.short { background: var(--series-short); }
+.swatch.long  { background: var(--series-long); }
+
+.chart-scroll { overflow-x: auto; padding: 0.4rem 0.6rem 1.1rem; }
+
+svg { display: block; max-width: 100%; height: auto; }
+
+figcaption {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: var(--step--1);
+  color: var(--ink-3);
+  padding: 0 1.3rem 1.1rem;
+  max-width: 74ch;
+}
+
+.axis-label, .tick-label, .row-label, .val-label, .pt-label {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.row-label, .pt-label {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-variant-numeric: normal;
+}
+
+.hit { cursor: pointer; }
+.hit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- tooltip ---------- */
+
+.tip {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  padding: 0.5rem 0.7rem;
+  border-radius: 3px;
+  max-width: 17rem;
+  opacity: 0;
+  transition: opacity 0.11s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tip { transition: none; }
+}
+
+.tip.on { opacity: 1; }
+.tip b { font-weight: 600; }
+.tip .t-num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+/* ---------- table ---------- */
+
+.table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+}
+
+table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+
+th, td {
+  padding: 0.5rem 0.85rem;
+  text-align: right;
+  border-bottom: 1px solid var(--rule-soft);
+  white-space: nowrap;
+}
+
+th {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--ink-3);
+  text-align: right;
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--rule);
+}
+
+th:first-child, td:first-child {
+  text-align: left;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+}
+
+td:not(:first-child) {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+tbody tr:last-child td { border-bottom: 0; }
+
+.tbl-group td {
+  background: var(--surface-sunk);
+  font-family: "IBM Plex Sans", system-ui, sans-serif !important;
+  font-size: var(--step--1);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  text-align: left;
+}
+
+.thin { color: var(--flag); }
+
+/* ---------- closing ---------- */
+
+.closing {
+  border: 1px solid var(--rule);
+  border-top: 3px solid var(--accent);
+  background: var(--surface);
+  padding: 2rem 2rem 1.6rem;
+  max-width: var(--measure);
+}
+
+.closing h2 { font-size: var(--step-2); margin-bottom: 0.9rem; }
+
+.pull {
+  font-size: var(--step-1);
+  font-style: italic;
+  color: var(--ink);
+  border-left: 2px solid var(--accent);
+  padding-left: 1.1rem;
+  margin: 1.4rem 0;
+}
+
+.method-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1.6rem 2.4rem;
+  max-width: 62rem;
+}
+
+.method-grid h3 {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.45rem;
+}
+
+.method-grid p { font-size: 0.93rem; color: var(--ink-2); margin-bottom: 0; }
+
+.formula {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.82rem;
+  background: var(--surface-sunk);
+  border: 1px solid var(--rule-soft);
+  padding: 0.55rem 0.75rem;
+  margin: 0.6rem 0 0;
+  overflow-x: auto;
+  color: var(--ink-2);
+}
+
+footer {
+  border-top: 1px solid var(--rule);
+  margin-top: 4rem;
+  padding-top: 1.4rem;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: var(--step--1);
+  color: var(--ink-3);
+  max-width: var(--measure);
+}
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">Analyse indépendante &middot; données publiques</div>
+    <h1>Lecture du catalogue Finary</h1>
+    <p class="standfirst">952 vidéos publiées entre janvier 2021 et août 2026, classées puis comparées à partir des seuls signaux visibles de l'extérieur. Cinq lectures, dans l'ordre où elles se construisent.</p>
+    <div class="byline">
+      <span><b>Salma El Mouden</b></span>
+      <span>21 août 2026</span>
+      <span>952 vidéos &middot; 119,8 M vues cumulées</span>
+      <span>YouTube Data API v3, lecture seule</span>
+    </div>
+  </header>
+
+  <p class="disclaimer">
+    <b>Ce document n'émane pas de Finary et n'y est pas affilié.</b> Il s'appuie exclusivement sur des données publiques obtenues via l'API officielle YouTube, en lecture seule&nbsp;: titre, date, durée, vues, likes, commentaires. Les inscriptions, la conversion, la durée de visionnage et les sources de trafic ne sont pas observables depuis l'extérieur d'une chaîne&nbsp;— elles ne sont ni utilisées, ni estimées, ni approchées ici. Aucune donnée interne, aucun logo, aucune marque reproduite.
+  </p>
+
+  <section>
+    <div class="section-head">
+      <span class="marker">00</span>
+      <h2>Cadrage&nbsp;: ce catalogue est deux produits, pas un</h2>
+    </div>
+    <p class="lede">La durée médiane d'une vidéo du catalogue est de 58&nbsp;secondes. Ce chiffre ne décrit aucune vidéo typique&nbsp;: il décrit une distribution en deux blocs. Toute moyenne calculée sur l'ensemble mélange deux formats aux dynamiques opposées.</p>
+
+    <div class="kpis">
+      <div class="kpi">
+        <span class="k-label">Shorts (≤&nbsp;60&nbsp;s)</span>
+        <span class="k-value">52<span style="font-size:0.5em">%</span></span>
+        <span class="k-note">486 vidéos indexées</span>
+      </div>
+      <div class="kpi">
+        <span class="k-label">Format long</span>
+        <span class="k-value">48<span style="font-size:0.5em">%</span></span>
+        <span class="k-note">440 vidéos indexées</span>
+      </div>
+      <div class="kpi">
+        <span class="k-label">Engagement — Shorts</span>
+        <span class="k-value">1,49<span style="font-size:0.5em">%</span></span>
+        <span class="k-note">(likes + commentaires) / vues</span>
+      </div>
+      <div class="kpi">
+        <span class="k-label">Engagement — long</span>
+        <span class="k-value">2,48<span style="font-size:0.5em">%</span></span>
+        <span class="k-note">1,7× les Shorts</span>
+      </div>
+    </div>
+
+    <p style="margin-top:1.6rem">Un spectateur de format long laisse une trace <strong>1,7 fois plus souvent</strong> qu'un spectateur de Short. Cet écart est systématique et il contamine toute statistique agrégée&nbsp;: un sujet majoritairement traité en long affichera un engagement élevé par simple effet de composition, sans que le sujet y soit pour quoi que ce soit.</p>
+    <p>C'est la raison pour laquelle tout ce qui suit est présenté <strong>par format</strong>. Les quatre lectures suivantes n'auraient pas le même sens autrement — et l'une d'elles s'inverse complètement selon le format retenu.</p>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <span class="marker">01</span>
+      <h2>Le récit a besoin de durée</h2>
+      <span class="strength solid">Solide</span>
+    </div>
+    <p>Les vidéos construites comme un récit — le parcours d'une personne, l'histoire d'une entreprise, un épisode marquant — représentent <span class="num">13,1&nbsp;%</span> du catalogue. Leur performance ne dépend pas du sujet mais du format dans lequel il est servi.</p>
+    <p>En format long, elles atteignent un indice de portée de <span class="num">1,33</span>, troisième rang sur treize sujets. En Short, les mêmes récits tombent à <span class="num">0,80</span>&nbsp;: <strong>dernier rang</strong>. Les deux échantillons sont larges — 72 vidéos longues, 49 Shorts — l'écart n'est pas un artefact.</p>
+
+    <figure>
+      <div class="fig-head">
+        <p class="fig-title">Indice de portée par sujet, Shorts contre format long</p>
+        <p class="fig-sub">Trié par écart entre les deux formats. Les sujets du haut gagnent à être traités en long&nbsp;; ceux du bas perdent.</p>
+      </div>
+      <div class="legend">
+        <span><i class="swatch short"></i> Shorts</span>
+        <span><i class="swatch long"></i> Format long</span>
+        <span style="color:var(--ink-3)">1,00 = médiane de la cohorte</span>
+      </div>
+      <div class="chart-scroll"><svg id="chart-topics" role="img" aria-label="Indice de portée par sujet, comparant Shorts et format long"></svg></div>
+      <figcaption>Sujets présents dans les deux formats avec au moins 5 vidéos de chaque côté. « Interview » n'apparaît pas&nbsp;: le format existe presque uniquement en long.</figcaption>
+    </figure>
+
+    <dl class="rx">
+      <div><dt>Pourquoi ça compte</dt><dd>Le récit est le registre qui fait le moins appel à une compétence financière préalable&nbsp;: c'est le point d'entrée naturel d'une audience qui ne s'estime pas encore concernée. Le servir en Short le prive de ce qui le rend efficace.</dd></div>
+      <div><dt>Ce que je testerais</dt><dd>Cesser de découper les récits en Shorts, et utiliser plutôt le Short comme amorce renvoyant vers la version longue.</dd></div>
+      <div><dt>Comment je mesurerais</dt><dd>Indice de portée du récit long avant/après sur 8 semaines, à cohorte de publication comparable. En interne&nbsp;: le taux d'inscription par vue, que je ne peux pas voir d'ici.</dd></div>
+    </dl>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <span class="marker">02</span>
+      <h2>Le format décide de l'accroche, pas l'inverse</h2>
+      <span class="strength solid">Solide</span>
+    </div>
+    <p>Le constat précédent n'est pas propre au récit. En classant chaque titre par le ressort qu'il emploie, le même renversement apparaît — et il est plus net encore.</p>
+    <p>Une accroche qui met en avant un expert ou une personnalité passe de <span class="num">0,96</span> en Short à <span class="num">1,39</span> en long, <strong>premier rang du format</strong>. Une accroche qui prend le contre-pied d'une idée reçue fait exactement l'inverse&nbsp;: <span class="num">1,15</span> en Short, où elle domine, contre <span class="num">1,01</span> en long.</p>
+    <p>Le point le plus actionnable est ailleurs. L'accroche la plus utilisée du catalogue est la question&nbsp;: <span class="num">255</span> vidéos, <strong>27,5&nbsp;%</strong> de la production. Elle obtient <span class="num">1,02</span> en Short et <span class="num">0,93</span> en long. Un quart de la production repose sur le seul ressort qui ne gagne dans aucun des deux formats.</p>
+
+    <figure>
+      <div class="fig-head">
+        <p class="fig-title">Indice de portée par type d'accroche, Shorts contre format long</p>
+        <p class="fig-sub">Même lecture que ci-dessus. L'ordre des accroches gagnantes s'inverse presque complètement entre les deux formats.</p>
+      </div>
+      <div class="legend">
+        <span><i class="swatch short"></i> Shorts</span>
+        <span><i class="swatch long"></i> Format long</span>
+        <span style="color:var(--ink-3)">1,00 = médiane de la cohorte</span>
+      </div>
+      <div class="chart-scroll"><svg id="chart-hooks" role="img" aria-label="Indice de portée par type d'accroche, comparant Shorts et format long"></svg></div>
+      <figcaption>Les huit ressorts couvrent l'intégralité du catalogue&nbsp;; chacun compte au moins 19 vidéos par format.</figcaption>
+    </figure>
+
+    <dl class="rx">
+      <div><dt>Pourquoi ça compte</dt><dd>C'est une décision éditoriale à coût nul&nbsp;: elle ne change ni le sujet, ni le tournage, ni le montage. Seulement la formulation du titre, en fonction du format de destination.</dd></div>
+      <div><dt>Ce que je testerais</dt><dd>Sur dix vidéos longues à venir, remplacer la question par une accroche d'autorité ou de promesse&nbsp;; sur dix Shorts, privilégier le contre-pied.</dd></div>
+      <div><dt>Comment je mesurerais</dt><dd>Indice de portée à cohorte constante, sur un minimum de 20 vidéos par bras pour sortir du bruit. En interne&nbsp;: le CTR de la vignette, qui isolerait l'effet du titre bien mieux que la portée.</dd></div>
+    </dl>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <span class="marker">03</span>
+      <h2>Le plus gros pari éditorial est le moins diffusé</h2>
+      <span class="strength solid">Solide</span>
+    </div>
+    <p>L'épargne et les placements — assurance-vie, fonds euros, livrets, PEA, allocation patrimoniale — constituent le premier sujet du catalogue, et de loin&nbsp;: <span class="num">187</span> vidéos, <strong>20,2&nbsp;%</strong> de l'ensemble. En format long, la concentration est encore plus marquée&nbsp;: <span class="num">110</span> vidéos, soit <strong>un quart</strong> de tout le format long.</p>
+    <p>C'est aussi le sujet qui circule le moins. Indice de portée&nbsp;: <span class="num">0,87</span> en long, <strong>onzième rang sur treize</strong>. Une vidéo d'épargne atteint typiquement 13&nbsp;% de spectateurs de moins que la vidéo médiane publiée le même trimestre.</p>
+    <p>Le graphique ci-dessous situe chaque sujet du format long sur les deux mesures disponibles. L'épargne n'y est pas une anomalie&nbsp;: elle se situe sur la tendance générale. C'est précisément ce qui rend le constat solide — <strong>ce n'est pas la performance du sujet qui interroge, c'est le volume qui lui est consacré.</strong></p>
+
+    <figure>
+      <div class="fig-head">
+        <p class="fig-title">Portée et engagement par sujet — format long uniquement</p>
+        <p class="fig-sub">Chaque point est un sujet. La taille du point reflète le nombre de vidéos. Restreint au format long pour neutraliser l'effet de composition décrit au cadrage.</p>
+      </div>
+      <div class="chart-scroll"><svg id="chart-scatter" role="img" aria-label="Nuage de points portée contre engagement par sujet en format long"></svg></div>
+      <figcaption>Les sujets qui portent le plus loin engagent le moins, et réciproquement&nbsp;: une portée large amène des spectateurs moins impliqués. L'épargne se situe sur cette tendance, pas au-dessus.</figcaption>
+    </figure>
+
+    <dl class="rx">
+      <div><dt>Pourquoi ça compte</dt><dd>Un quart du format long est investi sur le sujet qui atteint le moins de monde. Si ce choix vise la qualification de l'audience plutôt que le volume, il est cohérent&nbsp;— mais alors il devrait se lire dans le taux d'inscription, pas dans la portée.</dd></div>
+      <div><dt>Ce que je testerais</dt><dd>Rien, avant d'avoir vérifié l'hypothèse ci-dessus en interne. Réduire le volume d'un sujet sur son seul indice de portée serait une erreur si ce sujet est celui qui convertit.</dd></div>
+      <div><dt>Comment je mesurerais</dt><dd>Inscriptions par vue et par sujet. C'est la donnée qui tranche, et c'est exactement celle que je ne vois pas.</dd></div>
+    </dl>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <span class="marker">04</span>
+      <h2>Ce qui porte le plus loin engage le moins</h2>
+      <span class="strength solid">Solide</span>
+    </div>
+    <p>La portée et l'engagement ne mesurent pas la même chose. La première dit qu'une vidéo a voyagé&nbsp;; le second dit qu'elle a touché. Sur les accroches en format long, les deux se contredisent frontalement.</p>
+    <p>L'accroche d'autorité obtient le <strong>meilleur</strong> indice de portée du format (<span class="num">1,39</span>) et le <strong>plus faible</strong> engagement (<span class="num">2,13&nbsp;%</span>). L'accroche d'actualité fait l'exact opposé&nbsp;: portée la plus basse (<span class="num">0,69</span>), engagement le plus élevé (<span class="num">2,94&nbsp;%</span>). Soixante-deux vidéos d'un côté, vingt-quatre de l'autre.</p>
+    <p>Une précision de méthode qui compte&nbsp;: cette contradiction n'apparaît proprement qu'<strong>à format constant</strong>. Calculée sur l'ensemble du catalogue, la comparaison des engagements par accroche mesure surtout la proportion de Shorts dans chaque catégorie — la question est employée à 71&nbsp;% en Short, le récit à 77&nbsp;% en long. Les chiffres agrégés existent, ils sont dans la table plus bas, et ils ne veulent rien dire.</p>
+
+    <dl class="rx">
+      <div><dt>Pourquoi ça compte</dt><dd>Optimiser le calendrier éditorial sur la portée et l'optimiser sur l'engagement conduisent à deux lignes différentes. Le choix dépend de l'objectif — notoriété ou qualification — et il gagne à être explicite.</dd></div>
+      <div><dt>Ce que je testerais</dt><dd>Décider par intention&nbsp;: autorité quand l'objectif est le volume, actualité quand l'objectif est l'implication, plutôt qu'un mélange par défaut.</dd></div>
+      <div><dt>Comment je mesurerais</dt><dd>Suivre les deux métriques séparément, sans les fondre dans un score unique. En interne, l'arbitrage se tranche sur le taux d'inscription — encore lui.</dd></div>
+    </dl>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <span class="marker">05</span>
+      <h2>Les ETF&nbsp;: une hypothèse, pas un constat</h2>
+      <span class="strength tentative">À tester</span>
+    </div>
+    <p>Le sujet le plus performant du catalogue est la gestion passive et les ETF&nbsp;: indice de portée <span class="num">1,71</span> en long, <span class="num">1,50</span> en Short. Dans les deux formats, premier rang. C'est aussi le sujet le moins publié&nbsp;: <span class="num">18</span> vidéos, <strong>1,9&nbsp;%</strong> du catalogue.</p>
+    <p>Je le présente comme une hypothèse et non comme un résultat, pour une raison précise&nbsp;: l'échantillon est de <strong>7 vidéos</strong> en format long. Une médiane sur sept observations est instable, et deux vidéos exceptionnelles suffiraient à produire ce chiffre. C'est le nombre le plus spectaculaire de cette analyse et c'est le moins fiable des cinq — les deux vont souvent ensemble.</p>
+
+    <dl class="rx">
+      <div><dt>Pourquoi ça compte</dt><dd>Si l'effet se confirme, c'est un sujet sous-exploité par un facteur important. S'il ne se confirme pas, il n'aura coûté que quelques vidéos&nbsp;: le risque est asymétrique et penche du bon côté.</dd></div>
+      <div><dt>Ce que je testerais</dt><dd>Publier six à huit vidéos longues sur la gestion passive sur un trimestre, en visant explicitement à faire passer l'échantillon à une taille exploitable.</dd></div>
+      <div><dt>Comment je mesurerais</dt><dd>Reprendre l'indice quand n dépasse 15 en format long. En dessous, aucune conclusion — y compris si les chiffres sont flatteurs.</dd></div>
+    </dl>
+  </section>
+
+  <section>
+    <div class="closing">
+      <h2>Ce que je ne peux pas voir</h2>
+      <p>Tout ce qui précède provient de données publiques. Ce qui manque n'est pas un détail&nbsp;: c'est la moitié de la question. Je ne vois ni les inscriptions, ni la durée de visionnage, ni le CTR, ni les sources de trafic. Le classement des vidéos par portée est donc un proxy, et rien de plus.</p>
+      <p class="pull">La première question que je voudrais trancher, c'est&nbsp;: est-ce que le classement des vidéos par vues est le même que par inscriptions&nbsp;? Si les deux divergent, le calendrier éditorial optimise la mauvaise métrique — et les cinq lectures ci-dessus changent d'ordre de priorité.</p>
+      <p>C'est une question à laquelle une journée d'accès aux données internes répond. Le pipeline qui la traite est déjà écrit&nbsp;: ingestion, classification, normalisation par cohorte. Il ne lui manque qu'une colonne.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <span class="marker">§</span>
+      <h2>Méthode</h2>
+    </div>
+    <div class="method-grid">
+      <div>
+        <h3>Pourquoi pas les vues brutes</h3>
+        <p>Les vues médianes par année de publication passent de 8&nbsp;560 (2021) à 96&nbsp;229 (2026). Une vidéo de 2021 a eu cinq ans pour accumuler et reste derrière une vidéo de 2026 qui en est à huit mois&nbsp;: c'est la croissance de la chaîne qui domine, pas l'ancienneté. Agréger des vues brutes par sujet reviendrait à mesurer <em>quand</em> un sujet a été traité.</p>
+      </div>
+      <div>
+        <h3>Indice de portée</h3>
+        <p>Chaque vidéo est rapportée à la médiane de sa cohorte — même format, même trimestre de publication. Un indice de 1,00 signifie « typique pour sa cohorte », 1,33 signifie « un tiers au-dessus ».</p>
+        <p class="formula">portée = vues ÷ médiane(cohorte)
+cohorte = format × trimestre</p>
+      </div>
+      <div>
+        <h3>Engagement</h3>
+        <p>(likes + commentaires) ÷ vues. Beaucoup moins sensible à la croissance de la chaîne que la portée, puisque numérateur et dénominateur grandissent ensemble. Mais fortement dépendant du format, d'où la comparaison systématiquement à format constant.</p>
+      </div>
+      <div>
+        <h3>Couverture</h3>
+        <p><strong>926 vidéos sur 952</strong> portent un indice, soit 97&nbsp;%. Les 26 restantes appartiennent à des cohortes de moins de cinq vidéos — essentiellement 2021 et 2022, quand la chaîne publiait peu — et sont écartées plutôt qu'estimées. Dix cohortes sur trente-neuf ont été abandonnées pour cette raison.</p>
+      </div>
+      <div>
+        <h3>Médianes, pas moyennes</h3>
+        <p>La distribution des vues est très asymétrique&nbsp;: un Short de 58 secondes cumule 3,0&nbsp;millions de vues. Une moyenne serait pilotée par une poignée de vidéos.</p>
+      </div>
+      <div>
+        <h3>Seuils de report</h3>
+        <p>Aucune valeur reposant sur moins de cinq vidéos n'est affichée dans les tableaux&nbsp;; celles reposant sur moins de dix sont signalées comme telles. Une médiane sur trois observations n'est pas un résultat.</p>
+      </div>
+      <div>
+        <h3>Classement des sujets</h3>
+        <p>Les sujets et les ressorts d'accroche sont attribués par un modèle de langage à partir du <strong>titre seul</strong>. Les descriptions sont volontairement exclues&nbsp;: elles contiennent l'argumentaire produit et les liens de campagne, présents sur une large part des vidéos indépendamment de leur contenu. Un classement par mots-clés testé au préalable laissait 53&nbsp;% du catalogue non classé.</p>
+      </div>
+      <div>
+        <h3>Un seul instantané</h3>
+        <p>L'API publique renvoie des compteurs cumulés à l'instant de la collecte, sans historique. Cette analyse repose donc sur <strong>un point de mesure par vidéo</strong>, daté du 20 août 2026. Aucune évolution temporelle n'est calculable à ce stade&nbsp;; elle le deviendra après plusieurs semaines de collecte régulière.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <span class="marker">§</span>
+      <h2>Données complètes</h2>
+    </div>
+    <p>L'intégralité des valeurs qui soutiennent les cinq lectures. Les valeurs adossées à moins de dix vidéos sont <span class="thin">signalées</span>.</p>
+    <div class="table-scroll">
+      <table id="data-table">
+        <thead>
+          <tr>
+            <th scope="col">Catégorie</th>
+            <th scope="col">n</th>
+            <th scope="col">Portée</th>
+            <th scope="col">Engagement</th>
+            <th scope="col">Part</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p style="margin-top:1rem; font-size:0.9rem; color:var(--ink-3)">Rappel&nbsp;: le bloc « tous formats » est fourni pour transparence mais ses colonnes d'engagement sont confondues par la composition en formats — voir la lecture 04.</p>
+  </section>
+
+  <footer>
+    <p style="max-width:none">Analyse réalisée à partir de l'API YouTube Data v3 (lecture seule, données publiques), le 20 août 2026. Classement éditorial assisté par modèle de langage sur les titres&nbsp;; calculs déterministes et reproductibles à partir des étiquettes stockées. Document indépendant, sans affiliation à Finary.</p>
+  </footer>
+</div>
+
+<div class="tip" id="tip" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+const TOPIC_LABEL = {
+  etf_gestion_passive: "ETF / gestion passive",
+  bourse_actions: "Bourse & actions",
+  education_financiere: "Éducation financière",
+  retraite: "Retraite",
+  immobilier: "Immobilier",
+  interview: "Interview",
+  macro_actualite: "Macro & actualité",
+  portrait_histoire: "Portrait & récit",
+  crypto: "Crypto",
+  fiscalite: "Fiscalité",
+  epargne_placements: "Épargne & placements",
+  produit_finary: "Produit",
+  entrepreneuriat: "Entrepreneuriat"
+};
+
+const HOOK_LABEL = {
+  autorite: "Autorité",
+  promesse: "Promesse",
+  curiosite: "Curiosité",
+  question: "Question",
+  chiffre: "Chiffre",
+  recit: "Récit",
+  contrarian: "Contre-pied",
+  actualite: "Actualité"
+};
+
+// [key, nShort, reachShort, engShort, nLong, reachLong, engLong] — sorted by (long - short)
+const TOPICS = [
+  ["portrait_histoire",   49, 0.80, 1.49, 72, 1.33, 2.34],
+  ["education_financiere",23, 1.06, 1.65, 25, 1.58, 2.86],
+  ["etf_gestion_passive", 11, 1.50, 1.45,  7, 1.71, 2.56],
+  ["fiscalite",           51, 0.97, 1.23, 19, 1.18, 2.45],
+  ["macro_actualite",     70, 1.00, 1.54, 40, 1.14, 2.71],
+  ["retraite",            15, 1.01, 1.57, 20, 1.12, 2.25],
+  ["crypto",              46, 1.01, 1.58, 20, 0.89, 2.65],
+  ["immobilier",          52, 1.13, 1.46, 29, 1.00, 2.47],
+  ["epargne_placements",  77, 1.03, 1.52,110, 0.87, 2.50],
+  ["bourse_actions",      48, 1.36, 1.44, 32, 1.18, 2.27],
+  ["produit_finary",      20, 0.83, 1.35, 22, 0.61, 2.89],
+  ["entrepreneuriat",     20, 0.83, 1.47,  9, 0.52, 2.83]
+];
+
+const HOOKS = [
+  ["autorite",   46, 0.96, 1.42, 62, 1.39, 2.13],
+  ["promesse",   65, 0.95, 1.55, 54, 1.20, 2.75],
+  ["curiosite",  66, 0.99, 1.48, 42, 1.14, 2.78],
+  ["question",  181, 1.02, 1.49, 74, 0.93, 2.36],
+  ["chiffre",    26, 1.07, 1.60, 79, 0.97, 2.46],
+  ["recit",      24, 0.94, 1.53, 79, 0.83, 2.45],
+  ["contrarian", 59, 1.15, 1.39, 26, 1.01, 2.66],
+  ["actualite",  19, 0.99, 1.46, 24, 0.69, 2.94]
+];
+
+// Long-format only: [key, n, reach, engagement]
+const SCATTER = [
+  ["etf_gestion_passive",   7, 1.71, 2.56],
+  ["education_financiere", 25, 1.58, 2.86],
+  ["portrait_histoire",    72, 1.33, 2.34],
+  ["bourse_actions",       32, 1.18, 2.27],
+  ["fiscalite",            19, 1.18, 2.45],
+  ["macro_actualite",      40, 1.14, 2.71],
+  ["retraite",             20, 1.12, 2.25],
+  ["interview",            35, 1.02, 2.09],
+  ["immobilier",           29, 1.00, 2.47],
+  ["crypto",               20, 0.89, 2.65],
+  ["epargne_placements",  110, 0.87, 2.50],
+  ["produit_finary",       22, 0.61, 2.89],
+  ["entrepreneuriat",       9, 0.52, 2.83]
+];
+
+const ALL_TOPICS = [
+  ["etf_gestion_passive",  18, 1.59, 1.96, 1.9],
+  ["bourse_actions",       80, 1.24, 1.84, 8.6],
+  ["education_financiere", 48, 1.22, 2.21, 5.2],
+  ["retraite",             35, 1.11, 1.96, 3.8],
+  ["immobilier",           81, 1.06, 1.87, 8.8],
+  ["interview",            39, 1.02, 1.97, 4.2],
+  ["macro_actualite",     110, 1.01, 1.91, 11.9],
+  ["portrait_histoire",   121, 0.99, 2.08, 13.1],
+  ["crypto",               66, 0.98, 1.71, 7.1],
+  ["fiscalite",            70, 0.97, 1.49, 7.6],
+  ["epargne_placements",  187, 0.93, 2.17, 20.2],
+  ["produit_finary",       42, 0.74, 2.10, 4.5],
+  ["entrepreneuriat",      29, 0.73, 1.94, 3.1]
+];
+
+const ALL_HOOKS = [
+  ["contrarian",  85, 1.13, 1.76, 9.2],
+  ["autorite",   108, 1.07, 1.86, 11.7],
+  ["curiosite",  108, 1.06, 1.87, 11.7],
+  ["promesse",   119, 1.00, 2.04, 12.8],
+  ["question",   255, 1.00, 1.67, 27.5],
+  ["chiffre",    105, 1.00, 2.31, 11.3],
+  ["actualite",   43, 0.92, 2.06, 4.6],
+  ["recit",      103, 0.84, 2.31, 11.1]
+];
+
+const NS = "http://www.w3.org/2000/svg";
+const fr = (v, d) => v.toFixed(d).replace(".", ",");
+const el = (name, attrs) => {
+  const node = document.createElementNS(NS, name);
+  for (const key in attrs) node.setAttribute(key, attrs[key]);
+  return node;
+};
+
+/* ---------- tooltip ---------- */
+
+const tipNode = document.getElementById("tip");
+let tipTarget = null;
+
+function showTip(html, event) {
+  tipNode.innerHTML = html;
+  tipNode.classList.add("on");
+  moveTip(event);
+}
+
+function moveTip(event) {
+  const pad = 14;
+  const box = tipNode.getBoundingClientRect();
+  let x = event.clientX + pad;
+  let y = event.clientY + pad;
+  if (x + box.width > window.innerWidth - 8) x = event.clientX - box.width - pad;
+  if (y + box.height > window.innerHeight - 8) y = event.clientY - box.height - pad;
+  tipNode.style.left = x + "px";
+  tipNode.style.top = y + "px";
+}
+
+function hideTip() {
+  tipNode.classList.remove("on");
+  tipTarget = null;
+}
+
+function bindTip(node, html) {
+  node.classList.add("hit");
+  node.setAttribute("tabindex", "0");
+  node.addEventListener("mouseenter", (e) => showTip(html, e));
+  node.addEventListener("mousemove", moveTip);
+  node.addEventListener("mouseleave", hideTip);
+  node.addEventListener("focus", () => {
+    const r = node.getBoundingClientRect();
+    showTip(html, { clientX: r.left + r.width / 2, clientY: r.top });
+  });
+  node.addEventListener("blur", hideTip);
+}
+
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideTip(); });
+
+/* ---------- dumbbell ---------- */
+
+function drawDumbbell(svgId, rows, labels, unitNoun) {
+  const svg = document.getElementById(svgId);
+  const LEFT = 168, RIGHT = 44, TOP = 34, ROW = 34, BOTTOM = 44;
+  const W = 760;
+  const H = TOP + rows.length * ROW + BOTTOM;
+  const plotW = W - LEFT - RIGHT;
+  const lo = 0.4, hi = 1.85;
+  const x = (v) => LEFT + ((v - lo) / (hi - lo)) * plotW;
+
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.setAttribute("width", W);
+  svg.textContent = "";
+
+  // vertical gridlines
+  for (const t of [0.5, 0.75, 1.0, 1.25, 1.5, 1.75]) {
+    const isRef = t === 1.0;
+    svg.appendChild(el("line", {
+      x1: x(t), x2: x(t), y1: TOP - 12, y2: TOP + rows.length * ROW - 8,
+      stroke: isRef ? "var(--ink-3)" : "var(--rule-soft)",
+      "stroke-width": isRef ? 1 : 1,
+      "stroke-dasharray": isRef ? "3 3" : "none"
+    }));
+    const tick = el("text", {
+      x: x(t), y: TOP + rows.length * ROW + 14,
+      "text-anchor": "middle", class: "tick-label",
+      "font-size": 11, fill: "var(--ink-3)"
+    });
+    tick.textContent = fr(t, 2);
+    svg.appendChild(tick);
+  }
+
+  const axis = el("text", {
+    x: LEFT + plotW / 2, y: TOP + rows.length * ROW + 34,
+    "text-anchor": "middle", class: "axis-label",
+    "font-size": 11, fill: "var(--ink-3)"
+  });
+  axis.textContent = "indice de portée";
+  svg.appendChild(axis);
+
+  rows.forEach((row, i) => {
+    const [key, nS, rS, eS, nL, rL, eL] = row;
+    const y = TOP + i * ROW;
+    const thin = nS < 10 || nL < 10;
+
+    const label = el("text", {
+      x: LEFT - 16, y: y + 4, "text-anchor": "end", class: "row-label",
+      "font-size": 12.5, fill: thin ? "var(--flag)" : "var(--ink-2)"
+    });
+    label.textContent = labels[key] + (thin ? " *" : "");
+    svg.appendChild(label);
+
+    // connector
+    svg.appendChild(el("line", {
+      x1: x(Math.min(rS, rL)), x2: x(Math.max(rS, rL)), y1: y, y2: y,
+      stroke: "var(--ink-3)", "stroke-width": 2, opacity: 0.34,
+      "stroke-linecap": "round"
+    }));
+
+    // 2px surface ring on each mark keeps overlapping dots separable
+    const dotShort = el("circle", {
+      cx: x(rS), cy: y, r: 6,
+      fill: "var(--series-short)", stroke: "var(--surface)", "stroke-width": 2
+    });
+    const dotLong = el("circle", {
+      cx: x(rL), cy: y, r: 6,
+      fill: "var(--series-long)", stroke: "var(--surface)", "stroke-width": 2
+    });
+
+    bindTip(dotShort, `<b>${labels[key]}</b> — Shorts<br>portée <span class="t-num">${fr(rS, 2)}</span> · engagement <span class="t-num">${fr(eS, 2)}&nbsp;%</span><br><span class="t-num">${nS}</span> ${unitNoun}`);
+    bindTip(dotLong, `<b>${labels[key]}</b> — format long<br>portée <span class="t-num">${fr(rL, 2)}</span> · engagement <span class="t-num">${fr(eL, 2)}&nbsp;%</span><br><span class="t-num">${nL}</span> ${unitNoun}`);
+
+    svg.appendChild(dotShort);
+    svg.appendChild(dotLong);
+
+    // direct label on the trailing end — required relief for the contrast WARN
+    const gap = rL - rS;
+    const outer = gap >= 0 ? rL : rS;
+    const value = el("text", {
+      x: x(outer) + 13, y: y + 4, class: "val-label",
+      "font-size": 11.5, fill: "var(--ink-2)"
+    });
+    value.textContent = (gap >= 0 ? "+" : "") + fr(gap, 2);
+    svg.appendChild(value);
+  });
+
+  const note = el("text", {
+    x: 0, y: H - 6, class: "row-label", "font-size": 10.5, fill: "var(--flag)"
+  });
+  note.textContent = rows.some(r => r[1] < 10 || r[4] < 10) ? "*  moins de 10 vidéos dans l'un des formats" : "";
+  svg.appendChild(note);
+}
+
+/* ---------- scatter ---------- */
+
+function drawScatter() {
+  const svg = document.getElementById("chart-scatter");
+  const LEFT = 62, RIGHT = 26, TOP = 26, BOTTOM = 56;
+  const W = 760, H = 470;
+  const plotW = W - LEFT - RIGHT, plotH = H - TOP - BOTTOM;
+  const xlo = 0.4, xhi = 1.85, ylo = 1.95, yhi = 3.05;
+  const x = (v) => LEFT + ((v - xlo) / (xhi - xlo)) * plotW;
+  const y = (v) => TOP + plotH - ((v - ylo) / (yhi - ylo)) * plotH;
+  const r = (n) => Math.max(6, Math.min(19, 5 + Math.sqrt(n) * 1.35));
+
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.setAttribute("width", W);
+  svg.textContent = "";
+
+  for (const t of [0.5, 0.75, 1.0, 1.25, 1.5, 1.75]) {
+    const isRef = t === 1.0;
+    svg.appendChild(el("line", {
+      x1: x(t), x2: x(t), y1: TOP, y2: TOP + plotH,
+      stroke: isRef ? "var(--ink-3)" : "var(--rule-soft)", "stroke-width": 1,
+      "stroke-dasharray": isRef ? "3 3" : "none"
+    }));
+    const tk = el("text", {
+      x: x(t), y: TOP + plotH + 18, "text-anchor": "middle",
+      class: "tick-label", "font-size": 11, fill: "var(--ink-3)"
+    });
+    tk.textContent = fr(t, 2);
+    svg.appendChild(tk);
+  }
+
+  for (const t of [2.0, 2.25, 2.5, 2.75, 3.0]) {
+    svg.appendChild(el("line", {
+      x1: LEFT, x2: LEFT + plotW, y1: y(t), y2: y(t),
+      stroke: "var(--rule-soft)", "stroke-width": 1
+    }));
+    const tk = el("text", {
+      x: LEFT - 12, y: y(t) + 4, "text-anchor": "end",
+      class: "tick-label", "font-size": 11, fill: "var(--ink-3)"
+    });
+    tk.textContent = fr(t, 2) + " %";
+    svg.appendChild(tk);
+  }
+
+  const xa = el("text", {
+    x: LEFT + plotW / 2, y: H - 20, "text-anchor": "middle",
+    class: "axis-label", "font-size": 11, fill: "var(--ink-3)"
+  });
+  xa.textContent = "indice de portée  →";
+  svg.appendChild(xa);
+
+  const ya = el("text", {
+    x: 16, y: TOP + plotH / 2, "text-anchor": "middle",
+    class: "axis-label", "font-size": 11, fill: "var(--ink-3)",
+    transform: `rotate(-90 16 ${TOP + plotH / 2})`
+  });
+  ya.textContent = "taux d'engagement  →";
+  svg.appendChild(ya);
+
+  // Label placement: nudge the two crowded pairs apart rather than overlap.
+  const NUDGE = {
+    fiscalite: [0, -20], bourse_actions: [0, 16],
+    epargne_placements: [0, 18], crypto: [0, -20],
+    produit_finary: [0, -20], entrepreneuriat: [0, 18],
+    retraite: [0, 17], macro_actualite: [0, -20]
+  };
+
+  SCATTER.forEach(([key, n, reach, eng]) => {
+    const cx = x(reach), cy = y(eng);
+    const dot = el("circle", {
+      cx, cy, r: r(n),
+      fill: "var(--series-long)", "fill-opacity": 0.82,
+      stroke: "var(--surface)", "stroke-width": 2
+    });
+    bindTip(dot, `<b>${TOPIC_LABEL[key]}</b><br>portée <span class="t-num">${fr(reach, 2)}</span> · engagement <span class="t-num">${fr(eng, 2)}&nbsp;%</span><br><span class="t-num">${n}</span> vidéos longues`);
+    svg.appendChild(dot);
+
+    const [dx, dy] = NUDGE[key] || [0, -r(n) - 9];
+    const lab = el("text", {
+      x: cx + dx, y: cy + dy,
+      "text-anchor": "middle", class: "pt-label",
+      "font-size": 11.5, fill: n < 10 ? "var(--flag)" : "var(--ink-2)"
+    });
+    lab.textContent = TOPIC_LABEL[key] + (n < 10 ? " *" : "");
+    svg.appendChild(lab);
+  });
+
+  const note = el("text", {
+    x: LEFT, y: H - 4, class: "row-label", "font-size": 10.5, fill: "var(--flag)"
+  });
+  note.textContent = "*  moins de 10 vidéos — à traiter comme une hypothèse";
+  svg.appendChild(note);
+}
+
+/* ---------- table ---------- */
+
+function buildTable() {
+  const body = document.querySelector("#data-table tbody");
+  const groups = [
+    ["Sujets — format long", SCATTER.map(([k, n, reach, eng]) => [TOPIC_LABEL[k], n, reach, eng, null])],
+    ["Sujets — Shorts", TOPICS.map(([k, n, reach, eng]) => [TOPIC_LABEL[k], n, reach, eng, null])
+      .sort((a, b) => b[2] - a[2])],
+    ["Accroches — format long", HOOKS.map(([k, , , , n, reach, eng]) => [HOOK_LABEL[k], n, reach, eng, null])
+      .sort((a, b) => b[2] - a[2])],
+    ["Accroches — Shorts", HOOKS.map(([k, n, reach, eng]) => [HOOK_LABEL[k], n, reach, eng, null])
+      .sort((a, b) => b[2] - a[2])],
+    ["Sujets — tous formats (engagement confondu)", ALL_TOPICS.map(([k, n, reach, eng, share]) => [TOPIC_LABEL[k], n, reach, eng, share])],
+    ["Accroches — tous formats (engagement confondu)", ALL_HOOKS.map(([k, n, reach, eng, share]) => [HOOK_LABEL[k], n, reach, eng, share])]
+  ];
+
+  for (const [title, rows] of groups) {
+    const head = document.createElement("tr");
+    head.className = "tbl-group";
+    const cell = document.createElement("td");
+    cell.colSpan = 5;
+    cell.textContent = title;
+    head.appendChild(cell);
+    body.appendChild(head);
+
+    for (const [label, n, reach, eng, share] of rows) {
+      const tr = document.createElement("tr");
+      if (n < 10) tr.classList.add("thin");
+      const cells = [
+        label + (n < 10 ? " *" : ""),
+        String(n),
+        fr(reach, 2),
+        fr(eng, 2) + " %",
+        share == null ? "—" : fr(share, 1) + " %"
+      ];
+      cells.forEach((text, i) => {
+        const td = document.createElement(i === 0 ? "th" : "td");
+        if (i === 0) td.setAttribute("scope", "row");
+        td.textContent = text;
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    }
+  }
+}
+
+drawDumbbell("chart-topics", TOPICS, TOPIC_LABEL, "vidéos");
+drawDumbbell("chart-hooks", HOOKS, HOOK_LABEL, "vidéos");
+drawScatter();
+buildTable();
+</script>
