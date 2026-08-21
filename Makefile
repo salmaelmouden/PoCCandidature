@@ -1,5 +1,5 @@
 # Growth Intelligence AI
-.PHONY: help install up up-n8n n8n-build down status logs migrate seed ingest-youtube dashboard api test eval lint report n8n-import
+.PHONY: help install up up-n8n n8n-build down status logs migrate seed ingest-youtube classify public-report refresh refresh-loop dashboard api test eval lint report n8n-import
 
 VENV := .venv
 PYTHON := $(VENV)/bin/python
@@ -92,6 +92,19 @@ seed:
 ingest-youtube:
 	@echo "Requires YOUTUBE_API_KEY in .env — see docs/guides/youtube-demo-ingest.md"
 	$(PYTHON) scripts/ingest_youtube.py
+
+classify:
+	@echo "Requires ANTHROPIC_API_KEY in .env — falls back to keyword labels without it"
+	$(PYTHON) scripts/classify_content.py
+
+public-report:
+	$(PYTHON) scripts/public_signal_report.py
+
+refresh:
+	$(PYTHON) scripts/refresh_catalogue.py
+
+refresh-loop:
+	$(PYTHON) scripts/refresh_catalogue.py --loop --interval-seconds 900
 
 dashboard:
 	$(STREAMLIT) run dashboard/Home.py --server.headless true

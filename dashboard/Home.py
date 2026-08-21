@@ -74,6 +74,7 @@ else:
     )
 
 st.info(
-    "Use the sidebar for Acquisition, Content, Funnel, Analyst, and Orchestrator "
-    "(primary AI ask)."
+    "Sidebar: Acquisition · Content · Funnel · Analyst · Orchestrator · Experiments · "
+    "**Catalogue public** (real YouTube — no signup inference). "
+    "Funnel / Premium KPIs above are labelled synthetic unless you filtered them out."
 )

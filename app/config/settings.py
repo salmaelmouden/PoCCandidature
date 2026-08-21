@@ -2,8 +2,27 @@
 
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def normalize_database_url(url: str) -> str:
+    """
+    Force the psycopg (v3) driver on a provider-supplied connection string.
+
+    Managed Postgres providers hand out `postgres://` or `postgresql://`.
+    SQLAlchemy maps both to **psycopg2**, which this project does not install —
+    the app would fail at first connection with `ModuleNotFoundError: psycopg2`.
+    Only the scheme is rewritten; credentials and query string are untouched.
+    """
+    for prefix in ("postgresql+psycopg://", "postgresql+", "postgres+"):
+        if url.startswith(prefix):
+            return url  # an explicit driver was requested — respect it
+    if url.startswith("postgresql://"):
+        return "postgresql+psycopg://" + url[len("postgresql://") :]
+    if url.startswith("postgres://"):
+        return "postgresql+psycopg://" + url[len("postgres://") :]
+    return url
 
 
 class Settings(BaseSettings):
@@ -34,14 +53,47 @@ class Settings(BaseSettings):
     youtube_max_retries: int = Field(default=3, alias="YOUTUBE_MAX_RETRIES")
     youtube_max_pages: int = Field(default=2, alias="YOUTUBE_MAX_PAGES")
 
+    anthropic_api_key: str | None = Field(default=None, alias="ANTHROPIC_API_KEY")
+    llm_model: str = Field(default="claude-opus-5", alias="LLM_MODEL")
+    llm_batch_size: int = Field(default=40, alias="LLM_BATCH_SIZE")
+    # Corporate TLS interception (e.g. Zscaler) breaks Python's certifi bundle while
+    # curl still works. Point this at the system CA bundle when that happens.
+    ca_bundle_path: str | None = Field(default=None, alias="CA_BUNDLE_PATH")
+
     langfuse_public_key: str | None = Field(default=None, alias="LANGFUSE_PUBLIC_KEY")
     langfuse_secret_key: str | None = Field(default=None, alias="LANGFUSE_SECRET_KEY")
     langfuse_host: str | None = Field(default=None, alias="LANGFUSE_HOST")
 
+    @field_validator(
+        "anthropic_api_key",
+        "youtube_api_key",
+        "youtube_channel_id",
+        "ca_bundle_path",
+        "langfuse_public_key",
+        "langfuse_secret_key",
+        "langfuse_host",
+        "database_url",
+        mode="before",
+    )
+    @classmethod
+    def _blank_to_none(cls, value: object) -> object:
+        """`.env` placeholders are empty strings — treat them as unset, not as a value."""
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
+    @field_validator("llm_model", mode="before")
+    @classmethod
+    def _blank_to_default(cls, value: object) -> object:
+        """An empty `LLM_MODEL=` must not silently override the default model."""
+        if isinstance(value, str) and not value.strip():
+            return "claude-opus-5"
+        return value
+
     @property
     def sqlalchemy_database_url(self) -> str:
         if self.database_url:
-            return self.database_url
+            return normalize_database_url(self.database_url)
         return (
             f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"

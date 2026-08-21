@@ -27,6 +27,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+    # httpx logs full request URLs at INFO — that leaks YOUTUBE_API_KEY into stdout,
+    # container logs and any log shipper. Keep its request logging off.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     settings = get_settings()
     api_key = settings.youtube_api_key
     channel_id = args.channel_id or settings.youtube_channel_id or DEMO_YOUTUBE_CHANNEL_ID
@@ -65,6 +68,7 @@ def main(argv: list[str] | None = None) -> int:
         api_key,
         timeout_seconds=settings.youtube_timeout_seconds,
         max_retries=settings.youtube_max_retries,
+        ca_bundle_path=settings.ca_bundle_path,
     ) as client:
         with session_scope(factory) as session:
             result = ingest_youtube_channel(session, client, request)

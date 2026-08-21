@@ -64,6 +64,42 @@ services:
     restart: "no"
     networks: [gia]
 
+  # Opt-in: `docker compose --profile refresher up -d refresher`.
+  # Behind a TLS-intercepting corporate proxy the container's egress bypasses the
+  # proxy and the handshake is reset (SSL EOF) even with the host CA bundle mounted
+  # — DNS and TCP:443 both succeed, so it is egress policy, not certificates.
+  # On such a machine run `make refresh-loop` on the host instead. In a normal
+  # environment (Railway, CI, home network) this service works as-is.
+  refresher:
+    profiles: ["refresher"]
+    image: python:3.12-slim
+    container_name: gia-refresher
+    working_dir: /app
+    # 900s ≈ 38% of the free 10k daily YouTube quota for a ~950-video channel.
+    command:
+      [
+        "python",
+        "scripts/refresh_catalogue.py",
+        "--loop",
+        "--interval-seconds",
+        "900",
+      ]
+    environment:
+      <<: *app_env
+    volumes:
+      - ./:/app
+      - ./.venv:/opt/venv:ro
+      # The slim image ships only public roots. Behind a TLS-intercepting proxy
+      # (Zscaler & co) every outbound call fails with an SSL EOF unless the host
+      # bundle — which carries the corporate root — is mounted over it.
+      - ${CA_BUNDLE_PATH:-/etc/ssl/certs/ca-certificates.crt}:/etc/ssl/certs/ca-certificates.crt:ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    stop_grace_period: 30s
+    networks: [gia]
+
   api:
     image: python:3.12-slim
     container_name: gia-api

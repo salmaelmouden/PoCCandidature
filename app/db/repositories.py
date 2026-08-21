@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Sequence
 from uuid import UUID
@@ -15,8 +15,10 @@ from app.db.models import (
     AnalyticsSnapshot,
     Experiment,
     ExperimentResult,
+    IngestRun,
     User,
     Video,
+    VideoClassification,
     VideoDailyMetric,
 )
 
@@ -50,6 +52,13 @@ class VideoRepository:
     def list_all(self) -> Sequence[Video]:
         return self._session.scalars(select(Video).order_by(Video.published_at)).all()
 
+    def list_by_dataset_label(self, dataset_label: str) -> Sequence[Video]:
+        return self._session.scalars(
+            select(Video)
+            .where(Video.dataset_label == dataset_label)
+            .order_by(Video.published_at)
+        ).all()
+
 
 class VideoDailyMetricRepository:
     def __init__(self, session: Session) -> None:
@@ -71,6 +80,94 @@ class VideoDailyMetricRepository:
             setattr(existing, key, value)
         self._session.flush()
         return existing
+
+
+class IngestRunRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def record(
+        self,
+        *,
+        channel_id: str,
+        started_at: datetime,
+        videos_upserted: int,
+        metrics_upserted: int,
+        classified: int,
+        ok: bool,
+        error: str | None = None,
+    ) -> IngestRun:
+        row = IngestRun(
+            channel_id=channel_id,
+            started_at=started_at,
+            videos_upserted=videos_upserted,
+            metrics_upserted=metrics_upserted,
+            classified=classified,
+            ok=ok,
+            error=(error or None) and error[:512],
+        )
+        self._session.add(row)
+        self._session.flush()
+        return row
+
+    def latest(self, *, only_successful: bool = False) -> IngestRun | None:
+        statement = select(IngestRun).order_by(IngestRun.finished_at.desc()).limit(1)
+        if only_successful:
+            statement = (
+                select(IngestRun)
+                .where(IngestRun.ok.is_(True))
+                .order_by(IngestRun.finished_at.desc())
+                .limit(1)
+            )
+        return self._session.scalar(statement)
+
+
+class VideoClassificationRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def upsert(
+        self,
+        *,
+        video_id: UUID,
+        topic: str,
+        hook_type: str,
+        version: str,
+        classified_by: str,
+    ) -> VideoClassification:
+        existing = self._session.scalar(
+            select(VideoClassification).where(
+                VideoClassification.video_id == video_id,
+                VideoClassification.version == version,
+            )
+        )
+        if existing is None:
+            row = VideoClassification(
+                video_id=video_id,
+                topic=topic,
+                hook_type=hook_type,
+                version=version,
+                classified_by=classified_by,
+            )
+            self._session.add(row)
+            self._session.flush()
+            return row
+        existing.topic = topic
+        existing.hook_type = hook_type
+        existing.classified_by = classified_by
+        self._session.flush()
+        return existing
+
+    def classified_video_ids(self, version: str) -> set[UUID]:
+        rows = self._session.scalars(
+            select(VideoClassification.video_id).where(VideoClassification.version == version)
+        ).all()
+        return set(rows)
+
+    def list_by_version(self, version: str) -> Sequence[VideoClassification]:
+        return self._session.scalars(
+            select(VideoClassification).where(VideoClassification.version == version)
+        ).all()
 
 
 class AcquisitionRepository:

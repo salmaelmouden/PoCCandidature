@@ -2,21 +2,29 @@
 
 AI-native growth analytics, decision support, and automation for content-driven acquisition.
 
-> Independent portfolio project. **Hybrid data:** labelled synthetic funnel metrics + optional real public YouTube Data API ingest. Not affiliated with Finary; no private APIs, logos, or proprietary datasets.
+> Independent portfolio project, **not affiliated with Finary**. **Hybrid data:** labelled
+> synthetic funnel metrics + real **public** YouTube catalogue metadata via the official
+> Data API (read-only). No private APIs, no internal analytics, no logos, no proprietary
+> datasets. Public view/like/comment counts only — signups and conversion are not observable
+> from outside a channel and are never inferred.
 
 ## Current status
 
-**Phase 10 — Evaluation + polish** on branch `phase-10-evaluation-polish` (MVP complete).
+**Phase 14** — scheduled catalogue refresh + Railway deployment.
 
 ```bash
-make install   # once (venv is mounted into app containers)
-make up        # core stack (n8n optional — corporate Docker Hub often blocked)
+make install      # once (venv is mounted into app containers)
+make up           # core stack (n8n optional — corporate Docker Hub often blocked)
 make status
-make eval      # agent evaluation suite
-# Dashboard: http://localhost:8501
+make eval         # agent evaluation suite
+make public-report
+make refresh-loop # keep the catalogue current (every 15 min)
+# Dashboard: http://localhost:8501  (Catalogue public = real YouTube track)
 # API docs:  http://localhost:8000/docs
 # n8n UI:    make n8n-build && make up-n8n
 # Demo:      docs/guides/demo-script.md
+# Narrative: docs/insights/catalogue-finary.html
+# Deploy:    docs/guides/deploy-railway.md
 ```
 
 | Container | Role | Expected state |
@@ -201,3 +209,43 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
 - [x] Pinned synthetic fixtures for CI
 - [x] Interview demo script (`docs/guides/demo-script.md`)
 - [x] Docs / phases polish (MVP complete)
+
+### Phase 11
+
+- [x] Real Finary public catalogue ingested (952 videos, 2021→2026)
+- [x] `content_classification` skill — `topic` + `hook_type` via `claude-opus-5`,
+      deterministic keyword fallback when no key is set
+- [x] Versioned `video_classifications` table (migration `002`)
+- [x] `make classify` + `scripts/classify_content.py`
+- [x] ADR-008 — where an LLM may write to the database (amends ADR-002)
+- [x] Fixes: API key no longer logged, blank `.env` placeholders no longer override
+      defaults, corporate TLS interception configurable (`CA_BUNDLE_PATH`)
+
+### Phase 12
+
+- [x] `public_signal_analysis` skill — cohort-normalised reach index + engagement rate,
+      reported per format (the catalogue is 52 % Shorts)
+- [x] `services/public_signals.py` loader (excludes fallback-labelled rows)
+- [x] `make public-report` — evidence table, facts only
+- [x] Coverage reported explicitly: 926/952 videos indexed, 26 excluded as thin cohorts
+
+### Phase 13
+
+- [x] Streamlit **Catalogue public** page — five readings whose every number is
+      derived from the live report, so the narrative cannot drift after an ingest
+- [x] `dashboard/catalogue_view.py` — pure chart/table helpers, unit-tested
+- [x] Narrative HTML `docs/insights/catalogue-finary.html`
+- [x] Demo script covers synthetic funnel **and** public catalogue tracks
+- [x] Docs / phases synced
+
+### Phase 14
+
+- [x] `scripts/refresh_catalogue.py` — ingest + classify, once or on a loop, with
+      exponential backoff and a graceful SIGTERM stop (`make refresh` / `make refresh-loop`)
+- [x] `ingest_runs` table (migration `003`) — freshness is a property of the run,
+      not of the data: a same-day re-ingest updates rows, and unchanged counters
+      write nothing at all
+- [x] Page separates **last checked** from **last changed**, with minute resolution
+- [x] `Dockerfile` + `railway.json` + `docs/guides/deploy-railway.md`
+- [x] `DATABASE_URL` from managed providers rewritten to the psycopg 3 driver
+- [x] `YouTubeClient` honours `CA_BUNDLE_PATH` (previously only the Anthropic client did)
