@@ -34,13 +34,14 @@ class HealthResponse(BaseModel):
 
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
+    """Health check endpoint - read-only, no DB access."""
     return HealthResponse()
 
 
 @app.get("/")
 def root():
     """Simple test endpoint with no database access."""
-    return {"message": "API is running"}
+    return {"message": "API is running", "version": "0.9.0"}
 
 
 # Import heavy dependencies only when needed
@@ -71,7 +72,10 @@ try:
             min_length=3,
         ),
     ) -> WeeklyReportResponse:
-        """Generate the weekly growth report for n8n HTTP Request nodes."""
+        """Generate the weekly growth report for n8n HTTP Request nodes.
+        
+        Using sync context with session_scope() - this avoids async/psycopg3 issues.
+        """
         logger.info(f"Weekly report requested: days={days}, channel={channel}")
         with session_scope() as session:
             report = build_weekly_report(
@@ -105,5 +109,5 @@ except ImportError as e:
 except Exception as e:
     logger.error(f"Error setting up reports endpoint: {e}", exc_info=True)
 
-logger.info("FastAPI app initialized successfully")
+logger.info("FastAPI app initialized successfully - all handlers are sync (no async)")
 
