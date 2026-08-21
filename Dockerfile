@@ -29,9 +29,15 @@ COPY scripts ./scripts
 # third parties and should phone home as little as possible.
 ENV STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
 
-EXPOSE 8501
+# Deliberately no EXPOSE. The listening port is decided at runtime by $PORT, and
+# every start command below honours it. A hardcoded EXPOSE is worse than none
+# here: Railway reads it when choosing the target port for a generated domain, so
+# a stale value silently routes the public URL at a port nothing is listening on
+# and the edge returns "Application failed to respond" while the container is
+# perfectly healthy. Set PORT explicitly on the service instead — see
+# docs/guides/deploy-railway.md.
 
-# The web service. The refresher runs the same image with a different start
-# command (see docs/guides/deploy-railway.md).
+# The dashboard service. The API and the refresher run this same image with a
+# different start command (see docs/guides/deploy-railway.md).
 # $PORT is injected by the platform; 8501 is the local fallback.
 CMD ["sh", "-c", "alembic upgrade head && exec streamlit run dashboard/Home.py --server.port ${PORT:-8501} --server.address 0.0.0.0 --server.headless true"]

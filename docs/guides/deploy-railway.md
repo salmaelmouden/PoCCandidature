@@ -3,15 +3,29 @@
 Target: a public URL for the Streamlit dashboard, with the catalogue kept current
 by a background refresher.
 
-Three pieces, one repository:
+One repository, one image, several services that differ only by start command:
 
-| Railway service | What it is | Public |
-|---|---|---|
-| **Postgres** | managed database plugin | no |
-| **dashboard** | the Streamlit app (default `CMD`) | **yes — this is the link you share** |
-| **refresher** | `refresh_catalogue.py --loop`, same image, different start command | no |
+| Railway service | What it is | Config file | Public |
+|---|---|---|---|
+| **Postgres** | managed database plugin | — | no |
+| **dashboard** | the Streamlit app (default `CMD`) | `railway.json` | **yes — this is the link you share** |
+| **refresher** | `refresh_catalogue.py --loop` | — (start command only) | no |
+| **api** | FastAPI for n8n, optional | `railway.api.json` | only if n8n needs to reach it |
 
 Cost is roughly $5/month on the Hobby plan; the refresher is idle most of the time.
+
+## Every service must bind `$PORT`
+
+The one rule that matters for anything serving HTTP. Railway picks the target port
+for a generated domain by detection, and routes the public URL there; if the
+process is listening somewhere else, the edge returns **"Application failed to
+respond"** while the container is healthy and the deploy is green. The logs look
+perfect, because your request never reached them.
+
+So: set `PORT` explicitly as a variable on every service that has a domain, and
+never hardcode a port in a start command. The start commands in `railway.json` and
+`railway.api.json` all read `${PORT:-…}`, and the `Dockerfile` deliberately has no
+`EXPOSE` line — a stale one is what makes Railway target the wrong port.
 
 ## 0. Before you start
 
@@ -61,12 +75,15 @@ in the project canvas. Railway resolves it at deploy time.
 Leave `CA_BUNDLE_PATH` unset: it exists only to work around the corporate proxy
 locally, and pointing it at a path that does not exist in the image breaks TLS.
 
-Under **Settings → Networking**, click **Generate Domain**. That URL is the link
-you share.
+Add `PORT=8501` to the variables above, then under **Settings → Networking** click
+**Generate Domain** and check the domain's **target port** reads 8501. That URL is
+the link you share.
 
-Nothing else to set: the default `CMD` runs `alembic upgrade head` and then
-Streamlit on `$PORT`, and `railway.json` points the health check at
-`/_stcore/health`.
+Nothing else to set: `railway.json` supplies the start command (`alembic upgrade
+head`, then Streamlit on `$PORT`) and points the health check at `/_stcore/health`.
+Leave **Custom Start Command** in the dashboard UI *empty* — an override there is
+invisible from the repo, and a hand-typed port in it is the usual way this service
+ends up listening somewhere the domain is not pointing.
 
 ## 3. Add the refresher service
 
@@ -140,10 +157,37 @@ Do not go below 10 minutes. YouTube's public counters update with a lag anyway, 
 a faster cadence buys no freshness and risks exhausting the daily allowance — after
 which the refresher backs off and the page goes stale.
 
+## 6. Optional: the API service
+
+Only needed if n8n (or anything else) must call `POST /api/reports/weekly` over
+HTTP. The dashboard does not depend on it — skip this section otherwise.
+
+**New** → **GitHub Repo** → the same repository, then under **Settings**:
+
+- **Config-as-code path:** `railway.api.json` — this is what makes the service run
+  uvicorn instead of Streamlit. Set it here rather than typing a **Custom Start
+  Command**, so the deployed command lives in the repo and survives the next person
+  to touch the dashboard.
+- **Variables:** the same block as the dashboard, plus `PORT=8000`.
+- **Networking:** generate a domain only if n8n runs outside this project;
+  otherwise use the internal hostname and keep it private. Either way, confirm the
+  domain's target port matches `PORT`.
+
+`railway.api.json` runs uvicorn **without** `alembic upgrade head`, on purpose: the
+dashboard already migrates, and two concurrent `alembic upgrade` runs against one
+database can collide. If this service's logs show alembic running, it is using an
+overridden start command rather than the config file.
+
+Once it is up, `GET /` returns the service name, version, and where the docs are;
+`/docs` is the OpenAPI UI and `/health` is what the health check probes.
+
 ## Troubleshooting
 
 | Symptom | Cause |
 |---|---|
+| **"Application failed to respond"**, but the logs show a clean startup and a `200 OK` on the health path from `100.64.0.2` | The container is fine and Railway's proxy can reach it — your request cannot. The domain's **target port** does not match the port the process bound. Set `PORT` on the service, make sure the start command reads `$PORT`, and check the target port on the domain |
+| The public URL 404s with `{"detail":"Not Found"}` | You reached the **api** service, not the dashboard. That is a live app answering correctly — try `/docs` |
+| Logs show uvicorn where you expected Streamlit (or vice versa) | A **Custom Start Command** in the UI is overriding the repo config. Clear it and set the config-as-code path instead |
 | Healthcheck fails; logs show `connection to server at 127.0.0.1, port 5434 failed` | `DATABASE_URL` is missing on **that** service — add the `${{Postgres.DATABASE_URL}}` reference. It is per-service, never inherited |
 | `DATABASE_URL is not set and APP_ENV is production` | Same cause, caught early — follow the message |
 | `ModuleNotFoundError: psycopg2` | `DATABASE_URL` reached SQLAlchemy unrewritten — check `app/config/settings.py` is on the deployed revision |

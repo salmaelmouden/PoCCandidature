@@ -19,6 +19,15 @@ def test_health() -> None:
     assert resp.json()["status"] == "ok"
 
 
+def test_root_responds_instead_of_404() -> None:
+    """The bare domain must answer: a 404 there reads as a failed deploy."""
+    resp = client.get("/")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["service"] == "growth-intelligence-api"
+    assert body["health"] == "/health"
+
+
 def test_weekly_report_endpoint_uses_service() -> None:
     fake = WeeklyGrowthReport(
         title="Weekly Growth Report",

@@ -5,8 +5,8 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "alembic upgrade head && exec streamlit run dashboard/Home.py --server.port ${PORT:-8501} --server.address 0.0.0.0 --server.headless true",
-    "healthcheckPath": "/_stcore/health",
+    "startCommand": "exec uvicorn app.api.main:app --host 0.0.0.0 --port ${PORT:-8000}",
+    "healthcheckPath": "/health",
     "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 5
