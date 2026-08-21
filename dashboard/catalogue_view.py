@@ -52,6 +52,30 @@ def label_of(value: str) -> str:
     return TOPIC_FR.get(value, HOOK_FR.get(value, value))
 
 
+def humanize_age(seconds: float | None) -> str:
+    """
+    Age in French, with minute resolution.
+
+    Hour-only wording made a 15-minute refresh read as "moins d'1 h" forever,
+    which is exactly as uninformative as showing nothing.
+    """
+    if seconds is None:
+        return "—"
+    if seconds < 0:
+        seconds = 0
+    if seconds < 60:
+        return "à l'instant"
+    minutes = int(seconds // 60)
+    if minutes < 60:
+        return f"il y a {minutes} min"
+    hours = int(seconds // 3600)
+    if hours < 24:
+        remainder = int((seconds % 3600) // 60)
+        return f"il y a {hours} h" if remainder == 0 else f"il y a {hours} h {remainder:02d}"
+    days = int(seconds // 86400)
+    return "il y a 1 jour" if days == 1 else f"il y a {days} jours"
+
+
 def fr(value: float, digits: int = 2) -> str:
     """French decimal notation."""
     return f"{value:.{digits}f}".replace(".", ",")

@@ -68,6 +68,7 @@ def main(argv: list[str] | None = None) -> int:
         api_key,
         timeout_seconds=settings.youtube_timeout_seconds,
         max_retries=settings.youtube_max_retries,
+        ca_bundle_path=settings.ca_bundle_path,
     ) as client:
         with session_scope(factory) as session:
             result = ingest_youtube_channel(session, client, request)

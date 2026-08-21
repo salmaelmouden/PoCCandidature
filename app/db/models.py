@@ -71,8 +71,37 @@ class VideoDailyMetric(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
 
     video: Mapped[Video] = relationship(back_populates="daily_metrics")
+
+
+class IngestRun(Base):
+    """
+    One refresh cycle.
+
+    Needed because the metric upsert cannot answer "when did we last check?": on a
+    same-day re-ingest it updates the existing row, and when the counters have not
+    moved SQLAlchemy emits no UPDATE at all. Freshness is a property of the run,
+    not of the data.
+    """
+
+    __tablename__ = "ingest_runs"
+    __table_args__ = (Index("ix_ingest_runs_finished", "finished_at"),)
+
+    id: Mapped[Any] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    channel_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    finished_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    videos_upserted: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    metrics_upserted: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    classified: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    ok: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    error: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
 
 
 class VideoClassification(Base):

@@ -28,17 +28,24 @@ class YouTubeClient:
         max_retries: int = 3,
         transport: httpx.BaseTransport | None = None,
         sleep: Callable[[float], None] = time.sleep,
+        ca_bundle_path: str | None = None,
     ) -> None:
         if not api_key:
             raise ValueError("YouTube API key is required")
         self._api_key = api_key
         self._max_retries = max(0, max_retries)
         self._sleep = sleep
-        self._client = httpx.Client(
-            base_url=YOUTUBE_API_BASE,
-            timeout=timeout_seconds,
-            transport=transport,
-        )
+        client_kwargs: dict[str, Any] = {
+            "base_url": YOUTUBE_API_BASE,
+            "timeout": timeout_seconds,
+            "transport": transport,
+        }
+        # Behind a TLS-intercepting proxy the default certifi bundle lacks the
+        # corporate root CA and every request dies with an SSL EOF. Ignored when
+        # a transport is injected, since tests supply their own.
+        if ca_bundle_path and transport is None:
+            client_kwargs["verify"] = ca_bundle_path
+        self._client = httpx.Client(**client_kwargs)
 
     def close(self) -> None:
         self._client.close()

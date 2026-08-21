@@ -1,5 +1,5 @@
 # Growth Intelligence AI
-.PHONY: help install up up-n8n n8n-build down status logs migrate seed ingest-youtube classify public-report dashboard api test eval lint report n8n-import
+.PHONY: help install up up-n8n n8n-build down status logs migrate seed ingest-youtube classify public-report refresh refresh-loop dashboard api test eval lint report n8n-import
 
 VENV := .venv
 PYTHON := $(VENV)/bin/python
@@ -99,6 +99,12 @@ classify:
 
 public-report:
 	$(PYTHON) scripts/public_signal_report.py
+
+refresh:
+	$(PYTHON) scripts/refresh_catalogue.py
+
+refresh-loop:
+	$(PYTHON) scripts/refresh_catalogue.py --loop --interval-seconds 900
 
 dashboard:
 	$(STREAMLIT) run dashboard/Home.py --server.headless true

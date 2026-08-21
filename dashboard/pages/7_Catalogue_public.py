@@ -20,6 +20,7 @@ from app.skills.public_signal_analysis import PublicSignalReport
 from dashboard.catalogue_view import (
     dumbbell,
     fr,
+    humanize_age,
     label_of,
     paired_frame,
     pick,
@@ -80,23 +81,38 @@ f2.metric(
     delta=None if not fresh.unclassified else f"-{fresh.unclassified} en attente",
     delta_color="off",
 )
-f3.metric(
-    "Dernier relevé",
-    fresh.last_metric_date.isoformat() if fresh.last_metric_date else "—",
-)
-if fresh.last_ingest_at:
-    age_hours = (
-        datetime.now(timezone.utc) - fresh.last_ingest_at.astimezone(timezone.utc)
-    ).total_seconds() / 3600
-    age = f"il y a {age_hours:.0f} h" if age_hours >= 1 else "il y a moins d'1 h"
-else:
-    age = "—"
-f4.metric("Dernière ingestion", age)
+def _age(moment) -> str:
+    if moment is None:
+        return "—"
+    return humanize_age(
+        (datetime.now(timezone.utc) - moment.astimezone(timezone.utc)).total_seconds()
+    )
+
+
+f3.metric("Dernière vérification", _age(fresh.last_checked_at))
+f4.metric("Dernier changement", _age(fresh.last_changed_at))
+
+if fresh.last_checked_at is None:
+    st.warning(
+        "Aucun cycle de rafraîchissement enregistré — les chiffres datent de la "
+        "dernière ingestion manuelle. Lance `make refresh-loop` (ou le service "
+        "`refresher`) pour que la page se mette à jour toute seule.",
+        icon="⚠️",
+    )
+elif fresh.last_run_ok is False:
+    st.error(
+        f"Le dernier cycle de rafraîchissement a échoué : {fresh.last_run_error}. "
+        "Les chiffres affichés sont ceux du dernier cycle réussi.",
+        icon="🚨",
+    )
 
 st.caption(
-    "Cette page relit la base à chaque chargement (cache 2 min). La fraîcheur des "
-    "chiffres dépend de la dernière ingestion : l'API publique YouTube renvoie des "
-    "compteurs cumulés à l'instant de la collecte, sans historique."
+    f"Relevé du jour : {fresh.last_metric_date or '—'}. « Vérification » = dernier "
+    "passage du rafraîchisseur ; « changement » = dernière fois que des compteurs "
+    "ont réellement bougé. Les deux diffèrent parce qu'un passage qui ne trouve "
+    "rien de neuf n'écrit rien. L'API publique YouTube renvoie des compteurs "
+    "cumulés à l'instant de la collecte : la page ne peut pas être plus fraîche "
+    "que le dernier passage."
 )
 
 st.divider()

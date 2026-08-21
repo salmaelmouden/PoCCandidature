@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import pytest
+
 from app.skills.public_signal_analysis import DimensionStat
 from dashboard.catalogue_view import (
     HOOK_FR,
     TOPIC_FR,
     dumbbell,
     fr,
+    humanize_age,
     label_of,
     paired_frame,
     pick,
@@ -119,6 +122,28 @@ def test_table_converts_engagement_to_percent() -> None:
     frame = table_frame([stat("crypto", engagement=0.0248)], with_share=False)
 
     assert frame.loc[0, "Engagement %"] == 2.48
+
+
+@pytest.mark.parametrize(
+    ("seconds", "expected"),
+    [
+        (None, "—"),
+        (-5, "à l'instant"),  # clock skew must not print a negative age
+        (0, "à l'instant"),
+        (59, "à l'instant"),
+        (60, "il y a 1 min"),
+        # The reason this helper exists: a 15-minute refresh cadence has to be
+        # legible. Hour-only wording rendered every cycle as "moins d'1 h".
+        (900, "il y a 15 min"),
+        (3599, "il y a 59 min"),
+        (3600, "il y a 1 h"),
+        (5400, "il y a 1 h 30"),
+        (86400, "il y a 1 jour"),
+        (180000, "il y a 2 jours"),
+    ],
+)
+def test_humanize_age(seconds: float | None, expected: str) -> None:
+    assert humanize_age(seconds) == expected
 
 
 def test_charts_build_without_error() -> None:

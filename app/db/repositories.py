@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Sequence
 from uuid import UUID
@@ -15,6 +15,7 @@ from app.db.models import (
     AnalyticsSnapshot,
     Experiment,
     ExperimentResult,
+    IngestRun,
     User,
     Video,
     VideoClassification,
@@ -79,6 +80,46 @@ class VideoDailyMetricRepository:
             setattr(existing, key, value)
         self._session.flush()
         return existing
+
+
+class IngestRunRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def record(
+        self,
+        *,
+        channel_id: str,
+        started_at: datetime,
+        videos_upserted: int,
+        metrics_upserted: int,
+        classified: int,
+        ok: bool,
+        error: str | None = None,
+    ) -> IngestRun:
+        row = IngestRun(
+            channel_id=channel_id,
+            started_at=started_at,
+            videos_upserted=videos_upserted,
+            metrics_upserted=metrics_upserted,
+            classified=classified,
+            ok=ok,
+            error=(error or None) and error[:512],
+        )
+        self._session.add(row)
+        self._session.flush()
+        return row
+
+    def latest(self, *, only_successful: bool = False) -> IngestRun | None:
+        statement = select(IngestRun).order_by(IngestRun.finished_at.desc()).limit(1)
+        if only_successful:
+            statement = (
+                select(IngestRun)
+                .where(IngestRun.ok.is_(True))
+                .order_by(IngestRun.finished_at.desc())
+                .limit(1)
+            )
+        return self._session.scalar(statement)
 
 
 class VideoClassificationRepository:

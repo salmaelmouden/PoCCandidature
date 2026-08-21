@@ -6,6 +6,25 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+def normalize_database_url(url: str) -> str:
+    """
+    Force the psycopg (v3) driver on a provider-supplied connection string.
+
+    Managed Postgres providers hand out `postgres://` or `postgresql://`.
+    SQLAlchemy maps both to **psycopg2**, which this project does not install —
+    the app would fail at first connection with `ModuleNotFoundError: psycopg2`.
+    Only the scheme is rewritten; credentials and query string are untouched.
+    """
+    for prefix in ("postgresql+psycopg://", "postgresql+", "postgres+"):
+        if url.startswith(prefix):
+            return url  # an explicit driver was requested — respect it
+    if url.startswith("postgresql://"):
+        return "postgresql+psycopg://" + url[len("postgresql://") :]
+    if url.startswith("postgres://"):
+        return "postgresql+psycopg://" + url[len("postgres://") :]
+    return url
+
+
 class Settings(BaseSettings):
     """Runtime configuration loaded from environment / `.env`."""
 
@@ -74,7 +93,7 @@ class Settings(BaseSettings):
     @property
     def sqlalchemy_database_url(self) -> str:
         if self.database_url:
-            return self.database_url
+            return normalize_database_url(self.database_url)
         return (
             f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"

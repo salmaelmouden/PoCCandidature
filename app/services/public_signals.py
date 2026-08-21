@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db.models import Video, VideoClassification, VideoDailyMetric
+from app.db.repositories import IngestRunRepository
 from app.skills.content_classification.schemas import CLASSIFICATION_VERSION
 from app.skills.public_signal_analysis import (
     PublicSignalReport,
@@ -21,13 +22,23 @@ FALLBACK_BACKEND = "keyword_fallback"
 
 @dataclass(frozen=True)
 class CatalogueFreshness:
-    """How current the underlying snapshot is — shown, not assumed."""
+    """
+    How current the underlying snapshot is — shown, not assumed.
+
+    `last_checked_at` and `last_changed_at` are deliberately separate. A refresh
+    that finds identical counters writes nothing, so "when did the data last
+    change" is not the same question as "when did we last look". Conflating them
+    makes a live page look stale, or a stale page look live.
+    """
 
     videos: int
     classified: int
     last_metric_date: date | None
-    last_ingest_at: datetime | None
+    last_checked_at: datetime | None
+    last_changed_at: datetime | None
     last_classified_at: datetime | None
+    last_run_ok: bool | None
+    last_run_error: str | None
 
     @property
     def unclassified(self) -> int:
@@ -63,8 +74,8 @@ def get_catalogue_freshness(
         .join(Video, Video.id == VideoDailyMetric.video_id)
         .where(Video.dataset_label == dataset_label)
     )
-    last_ingest_at = session.scalar(
-        select(func.max(VideoDailyMetric.created_at))
+    last_changed_at = session.scalar(
+        select(func.max(VideoDailyMetric.updated_at))
         .join(Video, Video.id == VideoDailyMetric.video_id)
         .where(Video.dataset_label == dataset_label)
     )
@@ -73,12 +84,16 @@ def get_catalogue_freshness(
             VideoClassification.version == version
         )
     )
+    last_run = IngestRunRepository(session).latest()
     return CatalogueFreshness(
         videos=videos,
         classified=classified,
         last_metric_date=last_metric_date,
-        last_ingest_at=last_ingest_at,
+        last_checked_at=last_run.finished_at if last_run else None,
+        last_changed_at=last_changed_at,
         last_classified_at=last_classified_at,
+        last_run_ok=last_run.ok if last_run else None,
+        last_run_error=last_run.error if last_run else None,
     )
 
 
