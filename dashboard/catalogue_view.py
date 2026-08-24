@@ -2,6 +2,10 @@
 
 Kept out of the page module so they can be unit-tested: importing a Streamlit page
 executes it.
+
+The charts here take a :class:`~dashboard.theme.Tokens` so they follow the app
+theme, and default to the light set so a caller that only wants a spec — a test,
+a static export — does not have to know about themes at all.
 """
 
 from __future__ import annotations
@@ -10,13 +14,12 @@ import altair as alt
 import pandas as pd
 
 from app.skills.public_signal_analysis import DimensionStat
+from dashboard.charts import FONT, finalize
+from dashboard.formatting import fr, humanize_age  # noqa: F401  (re-exported)
+from dashboard.theme import LIGHT_TOKENS, Tokens
 
 SHORT = "Shorts"
 LONG = "Format long"
-C_SHORT = "#2a78d6"
-C_LONG = "#eb6834"
-C_MUTED = "#79848f"
-C_INK = "#4a5462"
 THIN_THRESHOLD = 10
 
 TOPIC_FR = {
@@ -52,35 +55,6 @@ def label_of(value: str) -> str:
     return TOPIC_FR.get(value, HOOK_FR.get(value, value))
 
 
-def humanize_age(seconds: float | None) -> str:
-    """
-    Age in French, with minute resolution.
-
-    Hour-only wording made a 15-minute refresh read as "moins d'1 h" forever,
-    which is exactly as uninformative as showing nothing.
-    """
-    if seconds is None:
-        return "—"
-    if seconds < 0:
-        seconds = 0
-    if seconds < 60:
-        return "à l'instant"
-    minutes = int(seconds // 60)
-    if minutes < 60:
-        return f"il y a {minutes} min"
-    hours = int(seconds // 3600)
-    if hours < 24:
-        remainder = int((seconds % 3600) // 60)
-        return f"il y a {hours} h" if remainder == 0 else f"il y a {hours} h {remainder:02d}"
-    days = int(seconds // 86400)
-    return "il y a 1 jour" if days == 1 else f"il y a {days} jours"
-
-
-def fr(value: float, digits: int = 2) -> str:
-    """French decimal notation."""
-    return f"{value:.{digits}f}".replace(".", ",")
-
-
 def pick(rows: list[DimensionStat], value: str) -> DimensionStat | None:
     return next((row for row in rows if row.value == value), None)
 
@@ -91,6 +65,42 @@ def rank_of(rows: list[DimensionStat], value: str) -> int | None:
         if row.value == value:
             return position
     return None
+
+
+def empty_state_message(
+    *, has_report: bool, videos: int, classified: int
+) -> str | None:
+    """The message to show instead of the analysis, or None if it can render.
+
+    The catalogue page is public and unauthenticated. An empty catalogue is an
+    ordinary state — on a fresh deploy the refresher has not run its first cycle
+    — but the analysis skill rightly refuses to analyse nothing, so something has
+    to decide what the visitor sees instead of a stack trace.
+
+    Two empty states, two remedies, and naming the wrong one sends the reader
+    after a fix that changes nothing: no videos at all is the refresher's job,
+    while videos present but unclassified is the classifier's.
+
+    Lives here rather than in the page because importing a Streamlit page runs
+    it, and this decision is worth testing.
+    """
+    if has_report and classified > 0:
+        return None
+    if videos == 0:
+        return (
+            "Catalogue vide — aucune vidéo n'a encore été ingérée.\n\n"
+            "- En local : `make ingest-youtube` puis `make classify`.\n"
+            "- En production : c'est le service *refresher* qui alimente cette "
+            "page (voir `docs/guides/deploy-railway.md` §3). Pour la remplir "
+            "immédiatement, un cycle unique suffit : "
+            "`python scripts/refresh_catalogue.py`."
+        )
+    return (
+        f"{videos} vidéos ingérées, mais aucune n'est encore classée.\n\n"
+        "- En local : `make classify`.\n"
+        "- En production : le *refresher* classe à chaque cycle ; si le compte "
+        "reste à zéro, vérifie `ANTHROPIC_API_KEY` sur ce service."
+    )
 
 
 def paired_frame(
@@ -145,9 +155,16 @@ def table_frame(rows: list[DimensionStat], with_share: bool) -> pd.DataFrame:
     )
 
 
-def dumbbell(frame: pd.DataFrame, title: str) -> alt.LayerChart:
-    """Paired dot plot: one row per category, one dot per format, sorted by gap."""
+def dumbbell(
+    frame: pd.DataFrame, title: str, tokens: Tokens = LIGHT_TOKENS
+) -> alt.LayerChart:
+    """Paired dot plot: one row per category, one dot per format, sorted by gap.
+
+    Two series, so the legend stays — and the gap is direct-labelled, which is
+    the number the chart is actually about.
+    """
     order = frame["categorie"].tolist()
+    short_colour, long_colour = tokens.categorical[0], tokens.categorical[1]
     melted = pd.concat(
         [
             frame.assign(
@@ -171,7 +188,7 @@ def dumbbell(frame: pd.DataFrame, title: str) -> alt.LayerChart:
 
     connector = (
         alt.Chart(frame)
-        .mark_rule(strokeWidth=2, opacity=0.32, color=C_MUTED)
+        .mark_rule(strokeWidth=2, opacity=0.32, color=tokens.axis)
         .encode(
             y=base_y,
             x=alt.X("portee_short:Q", scale=scale, title="Indice de portée"),
@@ -180,18 +197,18 @@ def dumbbell(frame: pd.DataFrame, title: str) -> alt.LayerChart:
     )
     reference = (
         alt.Chart(pd.DataFrame({"x": [1.0]}))
-        .mark_rule(strokeDash=[3, 3], color=C_MUTED)
+        .mark_rule(color=tokens.axis, strokeWidth=1)
         .encode(x="x:Q")
     )
     points = (
         alt.Chart(melted)
-        .mark_point(filled=True, size=150, stroke="white", strokeWidth=2)
+        .mark_point(filled=True, size=150, stroke=tokens.surface, strokeWidth=2)
         .encode(
             y=base_y,
             x=alt.X("portee:Q", scale=scale),
             color=alt.Color(
                 "format:N",
-                scale=alt.Scale(domain=[SHORT, LONG], range=[C_SHORT, C_LONG]),
+                scale=alt.Scale(domain=[SHORT, LONG], range=[short_colour, long_colour]),
                 legend=alt.Legend(title=None, orient="top"),
             ),
             tooltip=[
@@ -209,18 +226,24 @@ def dumbbell(frame: pd.DataFrame, title: str) -> alt.LayerChart:
             outer="max(datum.portee_short, datum.portee_long)",
             etiquette="(datum.ecart >= 0 ? '+' : '') + format(datum.ecart, '.2f')",
         )
-        .mark_text(align="left", dx=10, fontSize=11, color=C_MUTED)
+        .mark_text(align="left", dx=10, fontSize=11, font=FONT, color=tokens.ink_muted)
         .encode(y=base_y, x=alt.X("outer:Q", scale=scale), text=alt.Text("etiquette:N"))
     )
-    return (
-        (connector + reference + points + gaps)
-        .properties(height=max(240, 34 * len(order)), title=title)
-        .configure_view(strokeWidth=0)
+    return finalize(
+        connector + reference + points + gaps,
+        tokens,
+        title=title,
+        height=max(240, 34 * len(order)),
     )
 
 
-def scatter(rows: list[DimensionStat], title: str) -> alt.LayerChart:
-    """Reach against engagement, one point per category, sized by sample."""
+def scatter(
+    rows: list[DimensionStat], title: str, tokens: Tokens = LIGHT_TOKENS
+) -> alt.LayerChart:
+    """Reach against engagement, one point per category, sized by sample.
+
+    A single series, so no legend box: every point is direct-labelled instead.
+    """
     frame = pd.DataFrame(
         [
             {
@@ -234,7 +257,13 @@ def scatter(rows: list[DimensionStat], title: str) -> alt.LayerChart:
     )
     points = (
         alt.Chart(frame)
-        .mark_point(filled=True, stroke="white", strokeWidth=2, opacity=0.85, color=C_LONG)
+        .mark_point(
+            filled=True,
+            stroke=tokens.surface,
+            strokeWidth=2,
+            opacity=0.85,
+            color=tokens.categorical[1],
+        )
         .encode(
             x=alt.X(
                 "portee:Q",
@@ -255,16 +284,12 @@ def scatter(rows: list[DimensionStat], title: str) -> alt.LayerChart:
             ],
         )
     )
-    labels = points.mark_text(dy=-20, fontSize=11, color=C_INK).encode(
-        text="categorie:N", size=alt.value(11)
-    )
+    labels = points.mark_text(
+        dy=-20, fontSize=11, font=FONT, color=tokens.ink_soft
+    ).encode(text="categorie:N", size=alt.value(11))
     reference = (
         alt.Chart(pd.DataFrame({"x": [1.0]}))
-        .mark_rule(strokeDash=[3, 3], color=C_MUTED)
+        .mark_rule(color=tokens.axis, strokeWidth=1)
         .encode(x="x:Q")
     )
-    return (
-        (reference + points + labels)
-        .properties(height=440, title=title)
-        .configure_view(strokeWidth=0)
-    )
+    return finalize(reference + points + labels, tokens, title=title, height=440)

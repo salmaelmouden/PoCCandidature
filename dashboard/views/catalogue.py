@@ -1,13 +1,13 @@
-"""Public catalogue page — live reading of the ingested YouTube catalogue.
+"""Catalogue public — lecture en direct du catalogue YouTube ingéré.
 
-Presentation only: every number is derived from the report the service returns,
-so the narrative cannot drift away from the data after a new ingest.
-Chart/table helpers live in `dashboard.catalogue_view` (unit-testable).
+Présentation uniquement : chaque nombre est dérivé du rapport que renvoie le
+service, pour que le récit ne puisse pas dériver après une nouvelle ingestion.
+Les aides graphiques vivent dans `dashboard.catalogue_view` (testables).
 """
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import streamlit as st
 
@@ -16,9 +16,11 @@ from app.services.public_signals import (
     build_public_signal_report,
     get_catalogue_freshness,
 )
-from app.skills.public_signal_analysis import PublicSignalReport
+from app.skills.public_signal_analysis import PublicSignalError, PublicSignalReport
+from dashboard import components
 from dashboard.catalogue_view import (
     dumbbell,
+    empty_state_message,
     fr,
     humanize_age,
     label_of,
@@ -29,68 +31,96 @@ from dashboard.catalogue_view import (
     table_frame,
 )
 from dashboard.db import db_session
-from dashboard.ui import page_header
+from dashboard.ui import active_tokens, chart, fmt_int, page_header, section
 
-st.set_page_config(page_title="Catalogue public · Growth Intelligence AI", layout="wide")
+tokens = active_tokens()
 
 
 @st.cache_data(ttl=120, show_spinner="Lecture du catalogue…")
-def load() -> tuple[PublicSignalReport, CatalogueFreshness]:
+def load() -> tuple[PublicSignalReport | None, CatalogueFreshness]:
+    """Read the catalogue, tolerating one that has not been populated yet.
+
+    An empty catalogue is an ordinary state, not a fault: on a fresh deploy the
+    refresher has not run its first cycle. `analyse_public_signals` is right to
+    refuse to analyse nothing, so absorb that refusal here and return no report.
+
+    This page is public and unauthenticated, so an unhandled PublicSignalError
+    renders a stack trace — internal paths included — to anyone holding the link.
+    """
     with db_session() as session:
-        return build_public_signal_report(session), get_catalogue_freshness(session)
+        fresh = get_catalogue_freshness(session)
+        try:
+            return build_public_signal_report(session), fresh
+        except PublicSignalError:
+            return None, fresh
 
 
-# ---------------------------------------------------------------- page
-
-page_header(
-    "Catalogue public",
-    "Lecture en direct du catalogue YouTube ingéré — signaux publics uniquement.",
-)
-
-head_left, head_right = st.columns([4, 1])
-with head_right:
-    if st.button("Rafraîchir", width="stretch"):
-        load.clear()
-        st.rerun()
-
-report, fresh = load()
-
-if fresh.classified == 0:
-    st.warning(
-        "Aucune vidéo classée. Lance `make ingest-youtube` puis `make classify` "
-        "pour alimenter cette page."
-    )
-    st.stop()
-
-st.info(
-    "**Analyse indépendante, sans affiliation.** Données publiques via l'API YouTube "
-    "Data v3 en lecture seule : titre, date, durée, vues, likes, commentaires. "
-    "Les inscriptions, la conversion, la durée de visionnage et les sources de trafic "
-    "ne sont pas observables depuis l'extérieur d'une chaîne — elles ne sont ni "
-    "utilisées, ni estimées ici.",
-    icon="ℹ️",
-)
-
-# ---- freshness -------------------------------------------------------------
-
-f1, f2, f3, f4 = st.columns(4)
-f1.metric("Vidéos ingérées", f"{fresh.videos:,}".replace(",", " "))
-f2.metric(
-    "Classées",
-    f"{fresh.classified:,}".replace(",", " "),
-    delta=None if not fresh.unclassified else f"-{fresh.unclassified} en attente",
-    delta_color="off",
-)
 def _age(moment) -> str:
     if moment is None:
         return "—"
     return humanize_age(
-        (datetime.now(timezone.utc) - moment.astimezone(timezone.utc)).total_seconds()
+        (datetime.now(UTC) - moment.astimezone(UTC)).total_seconds()
     )
 
 
-f3.metric("Dernière vérification", _age(fresh.last_checked_at))
-f4.metric("Dernier changement", _age(fresh.last_changed_at))
+report, fresh = load()
+
+# The corpus span comes from the report, so it can only be shown once there is
+# one. The header itself still renders on an empty catalogue — a page that says
+# what it is beats a blank one.
+chips = [(f"{fmt_int(fresh.videos)} vidéos", False)]
+if report is not None:
+    chips.append((f"{report.period_start:%Y} → {report.period_end:%Y}", False))
+chips.append((f"Vérifié {_age(fresh.last_checked_at)}", True))
+
+page_header(
+    "Catalogue public",
+    "Lecture en direct du catalogue YouTube ingéré — signaux publics uniquement, "
+    "analyse indépendante et sans affiliation.",
+    chips=tuple(chips),
+)
+
+head_left, head_right = st.columns([4, 1])
+with head_right:
+    if st.button("Rafraîchir", width="stretch", icon=":material/refresh:"):
+        load.clear()
+        st.rerun()
+
+empty = empty_state_message(
+    has_report=report is not None,
+    videos=fresh.videos,
+    classified=fresh.classified,
+)
+if empty is not None:
+    st.warning(empty, icon="⚠️")
+    st.stop()
+
+st.markdown(
+    components.banner(
+        "<strong>Analyse indépendante, sans affiliation.</strong> Données publiques "
+        "via l'API YouTube Data v3 en lecture seule&nbsp;: titre, date, durée, vues, "
+        "likes, commentaires. Les inscriptions, la conversion, la durée de "
+        "visionnage et les sources de trafic ne sont pas observables depuis "
+        "l'extérieur d'une chaîne — elles ne sont ni utilisées, ni estimées ici.",
+        icon="●",
+        live=True,
+    ),
+    unsafe_allow_html=True,
+)
+
+# ---- fraîcheur -------------------------------------------------------------
+
+f1, f2, f3, f4 = st.columns(4)
+f1.metric("Vidéos ingérées", fmt_int(fresh.videos), border=True)
+f2.metric(
+    "Classées",
+    fmt_int(fresh.classified),
+    delta=None if not fresh.unclassified else f"{fresh.unclassified} en attente",
+    delta_color="off",
+    border=True,
+)
+f3.metric("Dernière vérification", _age(fresh.last_checked_at), border=True)
+f4.metric("Dernier changement", _age(fresh.last_changed_at), border=True)
 
 if fresh.last_checked_at is None:
     st.warning(
@@ -115,14 +145,12 @@ st.caption(
     "que le dernier passage."
 )
 
-st.divider()
-
-# ---- 00 · framing ----------------------------------------------------------
+# ---- 00 · cadrage ----------------------------------------------------------
 
 short_fmt = pick(report.by_format, "short")
 long_fmt = pick(report.by_format, "long")
 
-st.subheader("00 · Ce catalogue est deux produits, pas un")
+section("Ce catalogue est deux produits, pas un", index="00")
 
 if short_fmt and long_fmt:
     ratio = (
@@ -131,13 +159,32 @@ if short_fmt and long_fmt:
         else 0
     )
     k1, k2, k3, k4 = st.columns(4)
-    k1.metric("Shorts (≤ 60 s)", f"{short_fmt.share_of_catalogue * 100:.0f} %",
-              f"{short_fmt.videos} vidéos", delta_color="off")
-    k2.metric("Format long", f"{long_fmt.share_of_catalogue * 100:.0f} %",
-              f"{long_fmt.videos} vidéos", delta_color="off")
-    k3.metric("Engagement — Shorts", f"{fr(short_fmt.median_engagement_rate * 100)} %")
-    k4.metric("Engagement — long", f"{fr(long_fmt.median_engagement_rate * 100)} %",
-              f"{fr(ratio, 1)}× les Shorts", delta_color="off")
+    k1.metric(
+        "Shorts (≤ 60 s)",
+        f"{short_fmt.share_of_catalogue * 100:.0f} %",
+        f"{short_fmt.videos} vidéos",
+        delta_color="off",
+        border=True,
+    )
+    k2.metric(
+        "Format long",
+        f"{long_fmt.share_of_catalogue * 100:.0f} %",
+        f"{long_fmt.videos} vidéos",
+        delta_color="off",
+        border=True,
+    )
+    k3.metric(
+        "Engagement — Shorts",
+        f"{fr(short_fmt.median_engagement_rate * 100)} %",
+        border=True,
+    )
+    k4.metric(
+        "Engagement — long",
+        f"{fr(long_fmt.median_engagement_rate * 100)} %",
+        f"{fr(ratio, 1)}× les Shorts",
+        delta_color="off",
+        border=True,
+    )
 
     st.markdown(
         f"""
@@ -151,14 +198,12 @@ C'est pourquoi tout ce qui suit est présenté **par format**.
 """
     )
 
-st.divider()
-
-# ---- 01 · narrative needs runway -------------------------------------------
+# ---- 01 · le récit a besoin de durée ---------------------------------------
 
 topics = paired_frame(report.by_topic_short, report.by_topic_long)
 hooks = paired_frame(report.by_hook_short, report.by_hook_long)
 
-st.subheader("01 · Le récit a besoin de durée")
+section("Le récit a besoin de durée", index="01")
 
 narrative_s = pick(report.by_topic_short, "portrait_histoire")
 narrative_l = pick(report.by_topic_long, "portrait_histoire")
@@ -180,9 +225,9 @@ En format long elles atteignent **{fr(narrative_l.median_reach_index)}**
     )
 
 if not topics.empty:
-    st.altair_chart(
-        dumbbell(topics, "Indice de portée par sujet — Shorts contre format long"),
-        width="stretch",
+    chart(
+        dumbbell(topics, "Indice de portée par sujet — Shorts contre format long", tokens),
+        key="cat_topics",
     )
     st.caption(
         "Trié par écart entre formats. Les sujets du haut gagnent à être traités en "
@@ -202,11 +247,9 @@ with st.expander("Ce que je testerais"):
 """
     )
 
-st.divider()
+# ---- 02 · le format décide de l'accroche -----------------------------------
 
-# ---- 02 · format decides the hook ------------------------------------------
-
-st.subheader("02 · Le format décide de l'accroche, pas l'inverse")
+section("Le format décide de l'accroche, pas l'inverse", index="02")
 
 auth_s = pick(report.by_hook_short, "autorite")
 auth_l = pick(report.by_hook_long, "autorite")
@@ -237,9 +280,9 @@ des deux formats.
     )
 
 if not hooks.empty:
-    st.altair_chart(
-        dumbbell(hooks, "Indice de portée par accroche — Shorts contre format long"),
-        width="stretch",
+    chart(
+        dumbbell(hooks, "Indice de portée par accroche — Shorts contre format long", tokens),
+        key="cat_hooks",
     )
     st.caption("Même lecture. L'ordre des accroches gagnantes s'inverse entre formats.")
 
@@ -256,11 +299,9 @@ with st.expander("Ce que je testerais"):
 """
     )
 
-st.divider()
+# ---- 03 · le plus gros pari éditorial --------------------------------------
 
-# ---- 03 · biggest bet, least reach -----------------------------------------
-
-st.subheader("03 · Le plus gros pari éditorial est le moins diffusé")
+section("Le plus gros pari éditorial est le moins diffusé", index="03")
 
 savings_l = pick(report.by_topic_long, "epargne_placements")
 savings_all = pick(report.by_topic, "epargne_placements")
@@ -284,9 +325,9 @@ consacré.
 """
     )
 
-st.altair_chart(
-    scatter(report.by_topic_long, "Portée et engagement par sujet — format long"),
-    width="stretch",
+chart(
+    scatter(report.by_topic_long, "Portée et engagement par sujet — format long", tokens),
+    key="cat_scatter",
 )
 st.caption(
     "Taille du point = nombre de vidéos. Restreint au format long pour neutraliser "
@@ -308,16 +349,13 @@ with st.expander("Ce que je testerais"):
 """
     )
 
-st.divider()
+# ---- 04 · portée et engagement se contredisent -----------------------------
 
-# ---- 04 · reach and engagement disagree ------------------------------------
-
-st.subheader("04 · Ce qui porte le plus loin engage le moins")
+section("Ce qui porte le plus loin engage le moins", index="04")
 
 if report.by_hook_long:
     best_reach = report.by_hook_long[0]
     worst_reach = report.by_hook_long[-1]
-    by_eng = sorted(report.by_hook_long, key=lambda r: r.median_engagement_rate)
     st.markdown(
         f"""
 La portée dit qu'une vidéo a voyagé ; l'engagement dit qu'elle a touché. Sur les
@@ -341,11 +379,9 @@ accroches en format long, les deux se contredisent frontalement.
         icon="⚠️",
     )
 
-st.divider()
+# ---- 05 · une hypothèse ----------------------------------------------------
 
-# ---- 05 · hypothesis --------------------------------------------------------
-
-st.subheader("05 · Une hypothèse, pas un constat")
+section("Une hypothèse, pas un constat", index="05")
 
 if report.by_topic_long:
     top = report.by_topic_long[0]
@@ -373,11 +409,9 @@ suffisant pour le traiter comme un constat plutôt que comme une hypothèse.
 """
         )
 
-st.divider()
+# ---- ce que je ne peux pas voir --------------------------------------------
 
-# ---- what I cannot see ------------------------------------------------------
-
-st.subheader("Ce que je ne peux pas voir")
+section("Ce que je ne peux pas voir")
 st.markdown(
     """
 Tout ce qui précède provient de données publiques. Ce qui manque n'est pas un
@@ -396,9 +430,7 @@ qu'une colonne.
 """
 )
 
-st.divider()
-
-# ---- method & data ----------------------------------------------------------
+# ---- méthode et données ----------------------------------------------------
 
 with st.expander("Méthode et limites"):
     coverage = report.coverage
@@ -438,17 +470,21 @@ pas tourné plusieurs semaines.
 
 with st.expander("Données complètes"):
     st.caption("Les valeurs adossées à moins de 10 vidéos sont marquées d'un astérisque.")
-    for title, rows, share in [
+    groups = [
         ("Sujets — format long", report.by_topic_long, False),
         ("Sujets — Shorts", report.by_topic_short, False),
         ("Accroches — format long", report.by_hook_long, False),
         ("Accroches — Shorts", report.by_hook_short, False),
         ("Sujets — tous formats (engagement confondu)", report.by_topic, True),
         ("Accroches — tous formats (engagement confondu)", report.by_hook, True),
-    ]:
-        if rows:
-            st.markdown(f"**{title}**")
-            st.dataframe(table_frame(rows, share), width="stretch", hide_index=True)
+    ]
+    populated = [group for group in groups if group[1]]
+    if populated:
+        for tab, (title, rows, share) in zip(
+            st.tabs([title for title, _, _ in populated]), populated, strict=True
+        ):
+            with tab:
+                st.dataframe(table_frame(rows, share), width="stretch", hide_index=True)
 
 st.caption(
     f"Corpus : {report.period_start:%Y-%m-%d} → {report.period_end:%Y-%m-%d}. "

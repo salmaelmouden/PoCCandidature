@@ -41,3 +41,9 @@ pythonpath = ["."]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+
+[tool.ruff.lint.per-file-ignores]
+# The Streamlit entrypoint is referenced by name from the Makefile, the compose
+# file and the Dockerfile, so its capitalised module name is a contract, not a
+# style slip.
+"dashboard/Home.py" = ["N999"]
