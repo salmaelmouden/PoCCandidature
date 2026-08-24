@@ -14,12 +14,32 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# psycopg[binary] and every other dependency ship wheels for slim, so no compiler
-# toolchain is needed — keep the image small and the build fast.
+# psycopg needs libpq. The psycopg[binary] wheel bundles its own copy, so in
+# theory nothing is needed here — but that wheel does not reliably land: a deploy
+# installed psycopg without psycopg_binary and the container crash-looped on
+#
+#   ImportError: no pq wrapper available.
+#     - couldn't import psycopg 'binary' implementation: No module named 'psycopg_binary'
+#     - couldn't import psycopg 'python' implementation: libpq library not found
+#
+# libpq5 is the runtime library on its own (356 KB), which lets the pure-Python
+# implementation work whenever the binary wheel is absent. Note it is NOT
+# libpq-dev + build-essential: no compiler toolchain is needed to install these
+# dependencies, and an earlier image that carried one was ~110 MB larger for no
+# benefit. Keep this to the runtime library.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libpq5 \
+ && rm -rf /var/lib/apt/lists/*
+
 COPY pyproject.toml README.md ./
 COPY app ./app
 COPY dashboard ./dashboard
 RUN pip install .
+
+# Fail the build rather than the deploy. Without this, a broken psycopg install
+# surfaces much later as a healthcheck timeout, with the real cause buried in a
+# restart loop — which is exactly how the failure above presented.
+RUN python -c "from psycopg import pq; print('psycopg pq impl:', pq.__impl__)"
 
 COPY alembic.ini ./
 COPY alembic ./alembic
