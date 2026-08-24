@@ -11,6 +11,7 @@ One repository, one image, several services that differ only by start command:
 | **dashboard** | the Streamlit app (default `CMD`) | `railway.json` | **yes — this is the link you share** |
 | **refresher** | cron, `*/10` — one `refresh_catalogue.py` cycle per run. Without it the catalogue stays empty | `railway.refresher.json` | no |
 | **api** | FastAPI for n8n, optional | `railway.api.json` | only if n8n needs to reach it |
+| **seed** | one-shot, on demand — writes the synthetic funnel dataset | `railway.seed.json` | no |
 
 Cost is roughly $5/month on the Hobby plan. The refresher is a cron job, so it is
 billed only for the seconds it runs rather than for sitting idle.
@@ -189,6 +190,87 @@ python scripts/seed_synthetic_data.py
 
 The **Catalogue public** page does not need this — it reads only the real ingested
 catalogue.
+
+## Re-seeding after a change to the generator
+
+**Deploying does not fix data that is already in the database.** Neither start
+command re-seeds: `railway.json` runs `alembic upgrade head` then Streamlit, and
+`railway.refresher.json` ingests and classifies the real catalogue. So a fix inside
+`app/db/synthetic.py` — the floored funnel of `8921fc2` is the case this section
+was written for — changes what the generator *would* produce and nothing else. The
+deployed pages keep showing the old numbers until the rows are rewritten.
+
+Use `--reset`, not a plain re-run. The load upserts by natural key, so it corrects
+every row it generates again — but it cannot touch a row it no longer generates,
+and after a generator change there are always some:
+
+- **The window slid.** `as_of` defaults to today, so a re-seed a week later
+  generates a window seven days further on. The days that fell off the leading edge
+  stay in the table holding whatever the old generator wrote. Measured on the local
+  database: 3 384 acquisition rows before the reset, 3 240 generated — 144 rows of
+  stale funnel that an upsert would never have reached.
+- **The user keys shrank.** `syn_user_*` comes from a counter over signup volume,
+  so a run producing fewer signups leaves the previous run's tail behind.
+
+`--reset` deletes by `dataset_label`, never by table, and in the same transaction as
+the load — so the ingested catalogue under `youtube_api` is untouched, and a failed
+load rolls back rather than leaving the demo empty.
+
+### Option A — a one-shot seed service (works from anywhere)
+
+**New** → **GitHub Repo** → the same repository → **Settings** → **Config-as-code
+path:** `railway.seed.json`. Give it `DATABASE_URL=${{Postgres.DATABASE_URL}}` and
+`APP_ENV=production`; no domain, no `PORT`, no healthcheck — it has no HTTP server.
+
+It runs `seed_synthetic_data.py --reset` and exits. `restartPolicyType: NEVER`, for
+the same reason the refresher uses it: a job that exits has finished, not crashed.
+Watch its **Deploy Logs** for both lines, in this order:
+
+```
+Reset removed rows labelled synthetic_v1: {...}
+Seed complete: {'videos': 18, 'daily_metrics': ..., 'acquisitions': ..., ...}
+```
+
+It deliberately does **not** run `alembic upgrade head` — the dashboard already
+does, and two concurrent upgrades against one database can collide.
+
+Then delete the service. Left in place it re-seeds on every push to the branch,
+which is harmless but slides the window to that day's date each time — and the
+demo's decline narrative is anchored to `as_of`.
+
+### Option B — from your machine
+
+Only if your network can reach Railway's Postgres TCP proxy; the corporate proxy
+here may block it, in which case use option A.
+
+Copy the Postgres service's **public** connection string from its **Variables** tab
+(`DATABASE_PUBLIC_URL` — the `*.proxy.rlwy.net` one; `postgres.railway.internal`
+resolves inside Railway's network only), then:
+
+```
+make seed-remote DATABASE_URL='postgresql://postgres:...@turntable.proxy.rlwy.net:PORT/railway'
+```
+
+Locally, the same thing without the URL is `make seed-reset`.
+
+### Checking it took
+
+From the Railway shell on any service that has the variables:
+
+```
+python -c "
+from sqlalchemy import select, func
+from app.db import create_db_engine, create_session_factory, session_scope
+from app.db.models import Acquisition
+with session_scope(create_session_factory(create_db_engine())) as s:
+    a, p = s.execute(select(func.sum(Acquisition.activated_users),
+                            func.sum(Acquisition.premium_users))).one()
+    print(f'{p}/{a} = {p/a:.1%}')
+"
+```
+
+Roughly 12 % is the configured rate. A fraction of a percent means the rows are
+still the pre-fix ones and the reset did not reach this database.
 
 ## 5. Quota and cost guards
 

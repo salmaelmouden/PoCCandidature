@@ -5,8 +5,19 @@ from __future__ import annotations
 import logging
 from decimal import Decimal
 
+from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
+from app.db.constants import DATASET_LABEL
+from app.db.models import (
+    Acquisition,
+    AnalyticsSnapshot,
+    Experiment,
+    ExperimentResult,
+    User,
+    Video,
+    VideoDailyMetric,
+)
 from app.db.repositories import (
     AcquisitionRepository,
     AnalyticsSnapshotRepository,
@@ -18,6 +29,57 @@ from app.db.repositories import (
 from app.db.synthetic import SyntheticDataset
 
 logger = logging.getLogger(__name__)
+
+# Child-first. `acquisition.video_id` and `users.source_video_id` are ON DELETE SET
+# NULL, so removing the videos first would make the database rewrite rows this
+# function is about to delete anyway. `video_classifications` is absent on purpose:
+# it carries no `dataset_label` of its own and hangs off `videos` with ON DELETE
+# CASCADE, so the final statement takes it.
+_PURGE_ORDER: tuple[tuple[str, type], ...] = (
+    ("experiment_results", ExperimentResult),
+    ("experiments", Experiment),
+    ("users", User),
+    ("acquisitions", Acquisition),
+    ("snapshots", AnalyticsSnapshot),
+    ("daily_metrics", VideoDailyMetric),
+    ("videos", Video),
+)
+
+
+def purge_synthetic_dataset(session: Session, *, label: str = DATASET_LABEL) -> dict[str, int]:
+    """
+    Delete every row carrying `label`, so a re-seed replaces rather than layers.
+
+    `load_synthetic_dataset` upserts by natural key, which corrects a row it
+    generates again but cannot touch one it no longer generates. Two cases make
+    that gap real once a dataset has been written with a different generator:
+
+    - The window slides. `as_of` defaults to today, so a seed run a week after the
+      first leaves seven days at the leading edge outside the new window — still
+      in the database, still holding whatever the old generator produced.
+    - The row count shrinks. `_build_users` derives its keys from a running
+      counter over signup volume, so fewer signups mean the tail of
+      `syn_user_*` from the previous run is never revisited.
+
+    Scoped by `dataset_label`, never by table: the real ingested catalogue lives in
+    the same `videos` and `video_daily_metrics` tables under `youtube_api`, and the
+    public catalogue page reads it. A `TRUNCATE` here would take the demo's only
+    non-synthetic data with it.
+    """
+    counts: dict[str, int] = {}
+    for name, model in _PURGE_ORDER:
+        result = session.execute(
+            delete(model)
+            .where(model.dataset_label == label)
+            .execution_options(synchronize_session=False)
+        )
+        counts[name] = result.rowcount or 0
+    session.flush()
+    logger.info(
+        "synthetic_purge_complete",
+        extra={"dataset_label": label, "counts": counts},
+    )
+    return counts
 
 
 def load_synthetic_dataset(session: Session, dataset: SyntheticDataset) -> dict[str, int]:

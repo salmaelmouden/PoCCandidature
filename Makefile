@@ -1,5 +1,5 @@
 # Growth Intelligence AI
-.PHONY: help install up up-n8n n8n-build down status logs migrate seed ingest-youtube classify public-report refresh refresh-loop dashboard api test eval lint report n8n-import
+.PHONY: help install up up-n8n n8n-build down status logs migrate seed seed-reset seed-remote ingest-youtube classify public-report refresh refresh-loop dashboard api test eval lint report n8n-import
 
 VENV := .venv
 PYTHON := $(VENV)/bin/python
@@ -21,6 +21,8 @@ help:
 	@echo "Docker stack (recommended):"
 	@echo "  make install     - once: create .venv + deps"
 	@echo "  make up          - postgres, migrate, seed, api, dashboard"
+	@echo "  make seed-reset  - replace the synthetic dataset (after a generator change)"
+	@echo "  make seed-remote - same, against the deployed db (DATABASE_URL=...)"
 	@echo "  make n8n-build   - build local n8n image from cached node:20-slim (no Docker Hub n8n)"
 	@echo "  make up-n8n      - core + n8n visual UI (:5678)"
 	@echo "  make n8n-import  - import weekly workflow into running n8n"
@@ -88,6 +90,25 @@ migrate:
 
 seed:
 	$(PYTHON) scripts/seed_synthetic_data.py
+
+# Replace the labelled dataset instead of upserting over it. Needed after a change
+# to the generator: the load corrects the rows it regenerates, not the ones the old
+# generator wrote and the new one no longer produces.
+seed-reset:
+	$(PYTHON) scripts/seed_synthetic_data.py --reset
+
+# Same, against the deployed database. Pass the Postgres service's PUBLIC url —
+# Railway's `postgres.railway.internal` host only resolves inside their network:
+#
+#   make seed-remote DATABASE_URL='postgresql://postgres:...@turntable.proxy.rlwy.net:PORT/railway'
+#
+# Only touches rows labelled synthetic_v1; the ingested catalogue (youtube_api) is
+# left alone. If the corporate proxy blocks the outbound connection, deploy the
+# one-shot seed service instead — docs/guides/deploy-railway.md.
+seed-remote:
+	@test -n "$(DATABASE_URL)" || (echo "Set DATABASE_URL to the deployed Postgres public url. See the Makefile comment above this target."; exit 1)
+	@echo "Re-seeding REMOTE database (rows labelled synthetic_v1 are replaced)."
+	DATABASE_URL="$(DATABASE_URL)" APP_ENV=production $(PYTHON) scripts/seed_synthetic_data.py --reset
 
 ingest-youtube:
 	@echo "Requires YOUTUBE_API_KEY in .env — see docs/guides/youtube-demo-ingest.md"

@@ -51,6 +51,13 @@ make test
 
 Synthetic seed is idempotent and clearly labelled (`synthetic_v1`).
 
+After a change to the generator, `make seed` is not enough: it upserts, so it
+corrects the rows it regenerates and leaves behind any it no longer produces (the
+window slides with `as_of`, and the `syn_user_*` keys track signup volume). Use
+`make seed-reset` to replace the labelled dataset — the ingested catalogue
+(`youtube_api`) is left alone. For the deployed database, see
+[deploy-railway.md](docs/guides/deploy-railway.md#re-seeding-after-a-change-to-the-generator).
+
 ## Real YouTube ingest (Phase 3, optional but recommended for demos)
 
 You do **not** need your own channel. Default public demo channel: **Two Cents (PBS)**  
