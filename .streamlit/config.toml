@@ -1,0 +1,126 @@
+# Streamlit chrome — the widgets Streamlit draws itself.
+#
+# Custom CSS can only decorate what Streamlit has already painted, so the base
+# colours belong here: buttons, dataframes, metrics and the sidebar then follow
+# the brand without a stylesheet fighting them. `dashboard/theme.py` mirrors
+# these values for the pieces we draw ourselves (hero, cards, charts) — the two
+# files are meant to stay in step.
+#
+# Both modes are declared, so the theme switch in Streamlit's own menu keeps
+# working instead of being pinned to one look.
+
+[theme]
+# The starting mode. `base` is only valid here — inside [theme.light] /
+# [theme.dark] the section name already says which mode it describes, and
+# Streamlit rejects it there.
+base = "light"
+font = "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+headingFont = "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+codeFont = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace"
+baseFontSize = 15
+baseRadius = "0.7rem"
+buttonRadius = "0.6rem"
+headingFontSizes = ["2rem", "1.45rem", "1.15rem", "1rem", "0.95rem", "0.9rem"]
+headingFontWeights = [700, 650, 640, 600, 600, 600]
+metricValueFontSize = "2.05rem"
+metricValueFontWeight = 650
+showWidgetBorder = true
+showSidebarBorder = false
+
+[theme.light]
+primaryColor = "#1e8a63"
+backgroundColor = "#f7f8f6"
+secondaryBackgroundColor = "#fcfcfb"
+textColor = "#0b0b0b"
+linkColor = "#1e8a63"
+borderColor = "#e1e0d9"
+dataframeBorderColor = "#e1e0d9"
+dataframeHeaderBackgroundColor = "#f0f2ef"
+codeBackgroundColor = "#f0f2ef"
+codeTextColor = "#14684a"
+# Data palette — validated with the data-viz validator against surface #fcfcfb:
+# adjacent CVD ΔE 9.1 (protan), normal-vision ΔE 19.6, lightness band and chroma
+# floor clear. Aqua / yellow / magenta sit below 3:1, so every chart that uses
+# them ships direct labels or a table twin.
+chartCategoricalColors = [
+  "#2a78d6",
+  "#eb6834",
+  "#1baf7a",
+  "#eda100",
+  "#e87ba4",
+  "#008300",
+  "#4a3aa7",
+  "#e34948",
+]
+# Sequential = one hue, light → dark. Brand green, so magnitude reads on-brand
+# without ever colliding with a categorical slot.
+chartSequentialColors = [
+  "#e3f3ec",
+  "#c3e6d6",
+  "#9dd6bd",
+  "#6fc09f",
+  "#4bb28c",
+  "#3ea77f",
+  "#1e8a63",
+  "#176f50",
+  "#14684a",
+  "#0f4634",
+]
+
+[theme.light.sidebar]
+backgroundColor = "#0f2a24"
+secondaryBackgroundColor = "#173d33"
+textColor = "#e6efea"
+primaryColor = "#c4a574"
+linkColor = "#d8bd92"
+borderColor = "#265144"
+codeBackgroundColor = "#173d33"
+codeTextColor = "#d8bd92"
+showWidgetBorder = false
+
+[theme.dark]
+primaryColor = "#4fae86"
+backgroundColor = "#0b100e"
+secondaryBackgroundColor = "#141c19"
+textColor = "#f2f5f3"
+linkColor = "#79c8a5"
+borderColor = "#26302c"
+dataframeBorderColor = "#26302c"
+dataframeHeaderBackgroundColor = "#1b2421"
+codeBackgroundColor = "#1b2421"
+codeTextColor = "#79c8a5"
+# Same eight hues, stepped for the dark surface #141c19 — not an automatic flip.
+# Validator: adjacent CVD ΔE 8.4, normal-vision ΔE 19.3, all eight ≥ 3:1.
+chartCategoricalColors = [
+  "#3987e5",
+  "#d95926",
+  "#199e70",
+  "#c98500",
+  "#d55181",
+  "#008300",
+  "#9085e9",
+  "#e66767",
+]
+chartSequentialColors = [
+  "#0f4634",
+  "#14684a",
+  "#1f6a4f",
+  "#2f8b68",
+  "#3ea77f",
+  "#4fae86",
+  "#6fc09f",
+  "#79c8a5",
+  "#a8dcc4",
+  "#c9e9da",
+]
+
+[theme.dark.sidebar]
+backgroundColor = "#0a120f"
+secondaryBackgroundColor = "#152019"
+textColor = "#e6efea"
+primaryColor = "#d8bd92"
+linkColor = "#d8bd92"
+borderColor = "#1c2a24"
+codeBackgroundColor = "#152019"
+codeTextColor = "#d8bd92"
+showWidgetBorder = false

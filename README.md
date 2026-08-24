@@ -10,7 +10,7 @@ AI-native growth analytics, decision support, and automation for content-driven 
 
 ## Current status
 
-**Phase 14** — scheduled catalogue refresh + Railway deployment.
+**Phase 15** — dashboard design system: French UI, themed charts, light/dark.
 
 ```bash
 make install      # once (venv is mounted into app containers)
@@ -99,7 +99,7 @@ Layers: Presentation → API/Dashboard → Application → Agents → Skills →
 .cursor/skills/         # AI-assisted development skills
 app/db/                 # Models, repositories, synthetic loader
 alembic/                # Migrations
-dashboard/              # Streamlit (Phase 4+)
+dashboard/              # Streamlit — router + views/ + pure presentation layer
 evaluation/             # Agent evaluation structure
 n8n/workflows/          # Automation (Phase 9+)
 docs/                   # Architecture, conventions, ADRs
@@ -249,3 +249,26 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
 - [x] `Dockerfile` + `railway.json` + `docs/guides/deploy-railway.md`
 - [x] `DATABASE_URL` from managed providers rewritten to the psycopg 3 driver
 - [x] `YouTubeClient` honours `CA_BUNDLE_PATH` (previously only the Anthropic client did)
+
+### Phase 15
+
+- [x] Design system — `dashboard/theme.py` (light/dark tokens + stylesheet) mirrored
+      by `.streamlit/config.toml`, so Streamlit's own theme switch drives both the
+      widgets it paints and the parts we draw
+- [x] Brand chrome and data palette kept apart: the brand green never encodes a
+      value, and no series colour is reused as chrome
+- [x] Palettes **validated** rather than eyeballed — categorical (CVD ΔE 9.1 light /
+      8.4 dark) and a brand-green ordinal ramp for the funnel, each checked against
+      the surface it actually renders on; the sub-3:1 light slots ship a table twin
+- [x] `st.navigation` router (`dashboard/Home.py`) with grouped, French, icon-bearing
+      pages under `dashboard/views/` — replaces the filename-driven `pages/` nav
+- [x] Raw `st.dataframe` dumps replaced by charts with a form chosen per job: funnel
+      = ordinal ramp, period change = diverging bars, channel rates = one shared
+      axis, content = emphasis scatter
+- [x] Ergonomics — filters survive page switches, agent results survive a rerun,
+      example questions as pills, `st.status` while an agent works
+- [x] Motion is short, staggered, and disabled under `prefers-reduced-motion`
+- [x] `OverviewSnapshot.daily_series` — per-stage sparklines without a page reaching
+      into a repository
+- [x] `tests/dashboard/` covers tokens, French formatting, HTML escaping and every
+      chart spec in both themes

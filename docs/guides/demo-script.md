@@ -12,16 +12,17 @@
 
 ### Track A — Synthetic funnel (decision support)
 
-1. **Overview** — http://localhost:8501  
-   KPIs, bottleneck, anomalies. Point at `synthetic_v1` provenance banner.
+1. **Synthèse** — http://localhost:8501  
+   KPIs with sparklines, daily traffic with flagged days, funnel shape and its
+   leak point. Point at the `synthetic_v1` provenance banner.
 
-2. **Analyst** — “Why did Premium conversion decrease?”  
-   FACT vs INTERPRETATION, tool calls, primary driver.
+2. **Analyste** — “Why did Premium conversion decrease?”  
+   FACT vs INTERPRETATION as labelled cards, tool log, primary driver.
 
-3. **Orchestrator** — same question vs “What should we do about Premium?”  
+3. **Orchestrateur** — same question vs “What should we do about Premium?”  
    Route changes: analyst-only → analyst + strategist recommendations.
 
-4. **Experiments** — “Did the YouTube CTA experiment work?”  
+4. **Expérimentations** — “Did the YouTube CTA experiment work?”  
    Decision hint from the deterministic stats skill.
 
 5. **Automation** — http://localhost:8000/docs or n8n http://localhost:5678  
@@ -29,7 +30,7 @@
 
 ### Track B — Real public catalogue (measurement honesty)
 
-6. **Catalogue public** — sidebar page  
+6. **Catalogue public** — sidebar, section “Signal public”  
    Live reach/engagement by topic & hook × format, curated readings from the report.  
    Static deep-dive: `docs/insights/catalogue-finary.html`.
 
@@ -55,4 +56,6 @@ make n8n-build && make up-n8n && make n8n-import
 - Cohort-normalised reach — raw views are confounded by channel growth
 - Always report per format (catalogue is ~52% Shorts)
 - Optional Langfuse (no-op without keys)
+- Chart form is chosen per job, and the palette was run through a colour-vision
+  validator rather than picked by eye — every sub-3:1 colour ships a table twin
 - Corporate-friendly: venv mounted into containers; n8n from cached `node:20-slim`

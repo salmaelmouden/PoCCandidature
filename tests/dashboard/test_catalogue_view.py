@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from app.skills.public_signal_analysis import DimensionStat
@@ -9,6 +11,7 @@ from dashboard.catalogue_view import (
     HOOK_FR,
     TOPIC_FR,
     dumbbell,
+    empty_state_message,
     fr,
     humanize_age,
     label_of,
@@ -18,6 +21,7 @@ from dashboard.catalogue_view import (
     scatter,
     table_frame,
 )
+from dashboard.theme import DARK_TOKENS, LIGHT_TOKENS
 
 
 def stat(
@@ -154,5 +158,55 @@ def test_charts_build_without_error() -> None:
     dumbbell_spec = dumbbell(paired_frame(shorts, longs), "titre").to_dict()
     scatter_spec = scatter(longs, "titre").to_dict()
 
-    assert dumbbell_spec["title"] == "titre"
-    assert scatter_spec["title"] == "titre"
+    # The title carries its own typography now, so it is an object rather than
+    # a bare string — the text is what this test is actually about.
+    assert dumbbell_spec["title"]["text"] == "titre"
+    assert scatter_spec["title"]["text"] == "titre"
+
+
+def test_charts_follow_the_active_theme() -> None:
+    """A dark render must use the dark-stepped hues, not the light ones."""
+    shorts = [stat("crypto", reach=1.0), stat("immobilier", reach=1.1)]
+    longs = [stat("crypto", reach=1.4), stat("immobilier", reach=0.9)]
+    frame = paired_frame(shorts, longs)
+
+    light = json.dumps(dumbbell(frame, "titre", LIGHT_TOKENS).to_dict())
+    dark = json.dumps(dumbbell(frame, "titre", DARK_TOKENS).to_dict())
+
+    assert LIGHT_TOKENS.categorical[0] in light
+    assert DARK_TOKENS.categorical[0] in dark
+    assert light != dark
+
+
+# ---------------------------------------------------- the public empty state
+#
+# This page answers an unauthenticated URL. When the catalogue is empty the
+# analysis skill raises, and an unhandled raise means Streamlit renders a stack
+# trace — internal paths included — to whoever holds the link. That regression
+# has already shipped once: the handling was written for the old
+# `dashboard/pages/` page and lost when it was replaced by `dashboard/views/`.
+
+
+def test_populated_catalogue_renders_normally() -> None:
+    assert empty_state_message(has_report=True, videos=953, classified=953) is None
+
+
+def test_no_videos_points_at_the_refresher() -> None:
+    message = empty_state_message(has_report=False, videos=0, classified=0)
+    assert message is not None
+    assert "Catalogue vide" in message
+    assert "refresh_catalogue.py" in message
+
+
+def test_unclassified_videos_point_at_the_classifier_instead() -> None:
+    """Naming the refresher here would send the reader after the wrong fix."""
+    message = empty_state_message(has_report=False, videos=953, classified=0)
+    assert message is not None
+    assert "ANTHROPIC_API_KEY" in message
+    assert "Catalogue vide" not in message
+    assert "953" in message
+
+
+def test_a_report_that_failed_to_build_still_stops_the_page() -> None:
+    """has_report=False is the PublicSignalError case, whatever the counts say."""
+    assert empty_state_message(has_report=False, videos=953, classified=953) is not None

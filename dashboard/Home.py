@@ -1,12 +1,20 @@
-"""Growth Intelligence AI — Streamlit entrypoint."""
+"""Growth Intelligence AI — point d'entrée Streamlit.
+
+Ce module ne rend rien lui-même : il déclare la navigation et exécute la page
+choisie. Les pages vivent dans `dashboard/views/`, et non dans un dossier
+`pages/` auto-découvert, parce que `st.navigation` permet de les regrouper, de
+les nommer en français et de leur donner une icône — ce que le nom de fichier ne
+permet pas.
+
+Le thème est injecté ici, une fois, avant l'exécution de la page : c'est le même
+run de script, donc toutes les pages en héritent.
+"""
 
 from __future__ import annotations
 
 import streamlit as st
 
-from dashboard.db import db_session
-from dashboard.ui import data_provenance_banner, fmt_delta, page_header, sidebar_filters
-from app.services.dashboard import get_overview
+from dashboard.ui import inject_theme, sidebar_brand
 
 st.set_page_config(
     page_title="Growth Intelligence AI",
@@ -15,66 +23,29 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-page_header(
-    "Executive overview",
-    "Period KPIs, funnel health, and traffic anomalies from the analytics layer.",
-)
-days, channel = sidebar_filters()
+inject_theme()
+sidebar_brand()
 
-with db_session() as session:
-    snap = get_overview(session, days=days, channel=channel)
+NAVIGATION = {
+    "Analyse": [
+        st.Page(
+            "views/overview.py",
+            title="Synthèse",
+            icon=":material/space_dashboard:",
+            default=True,
+        ),
+        st.Page("views/acquisition.py", title="Acquisition", icon=":material/hub:"),
+        st.Page("views/content.py", title="Contenu", icon=":material/movie:"),
+        st.Page("views/funnel.py", title="Entonnoir", icon=":material/filter_alt:"),
+    ],
+    "Agents": [
+        st.Page("views/orchestrator.py", title="Orchestrateur", icon=":material/account_tree:"),
+        st.Page("views/analyst.py", title="Analyste", icon=":material/query_stats:"),
+        st.Page("views/experiments.py", title="Expérimentations", icon=":material/science:"),
+    ],
+    "Signal public": [
+        st.Page("views/catalogue.py", title="Catalogue public", icon=":material/public:"),
+    ],
+}
 
-data_provenance_banner(has_synthetic=snap.has_synthetic, labels=snap.dataset_labels)
-
-st.caption(
-    f"Period {snap.period.start} → {snap.period.end} "
-    f"(vs {snap.period.previous_start} → {snap.period.previous_end})"
-    + (f" · channel={channel}" if channel else "")
-)
-
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Views", f"{snap.current_counts['views']:,}", fmt_delta(snap.relative_deltas["views"]))
-c2.metric("Visits", f"{snap.current_counts['visits']:,}", fmt_delta(snap.relative_deltas["visits"]))
-c3.metric(
-    "Signups", f"{snap.current_counts['signups']:,}", fmt_delta(snap.relative_deltas["signups"])
-)
-c4.metric(
-    "Premium",
-    f"{snap.current_counts['premium_users']:,}",
-    fmt_delta(snap.relative_deltas["premium_users"]),
-)
-
-st.subheader("Funnel bottleneck")
-if snap.funnel.bottleneck_from_stage:
-    st.write(
-        f"**{snap.funnel.bottleneck_from_stage} → {snap.funnel.bottleneck_to_stage}** "
-        f"(dropoff rate {snap.funnel.bottleneck_dropoff_rate:.1%})"
-    )
-else:
-    st.write("No funnel stages available for this filter.")
-
-st.subheader("Traffic anomalies (views)")
-anomalies = snap.traffic_anomalies.anomalies
-if not anomalies:
-    st.write("No anomalies flagged for this period.")
-else:
-    st.dataframe(
-        [
-            {
-                "date": a.label,
-                "value": a.value,
-                "direction": a.direction,
-                "method": a.method.value,
-                "score": round(a.score, 3),
-            }
-            for a in anomalies
-        ],
-        use_container_width=True,
-        hide_index=True,
-    )
-
-st.info(
-    "Sidebar: Acquisition · Content · Funnel · Analyst · Orchestrator · Experiments · "
-    "**Catalogue public** (real YouTube — no signup inference). "
-    "Funnel / Premium KPIs above are labelled synthetic unless you filtered them out."
-)
+st.navigation(NAVIGATION).run()

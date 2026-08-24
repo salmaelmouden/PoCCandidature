@@ -43,6 +43,11 @@ class OverviewSnapshot:
     traffic_anomalies: AnomalyDetectionResult
     dataset_labels: frozenset[str]
     has_synthetic: bool
+    #: One entry per funnel stage, ordered by day. A KPI tile is only readable
+    #: with its trend beside it, and the shape of the period is not derivable
+    #: from two totals — so the service returns it rather than leaving the page
+    #: to query the repository itself.
+    daily_series: dict[str, list[tuple[date, int]]]
 
 
 @dataclass(frozen=True)
@@ -132,11 +137,17 @@ def get_overview(
         prev = previous[stage]
         relative[stage] = ((current[stage] - prev) / prev) if prev > 0 else None
 
-    series_rows = repo.daily_metric_series(
-        start=period.start, end=period.end, metric="views", channel=channel
-    )
+    daily_series = {
+        stage: repo.daily_metric_series(
+            start=period.start, end=period.end, metric=stage, channel=channel
+        )
+        for stage in FUNNEL_STAGES
+    }
     anomalies = detect_traffic_anomalies(
-        [TimeSeriesPoint(label=day.isoformat(), value=float(value)) for day, value in series_rows]
+        [
+            TimeSeriesPoint(label=day.isoformat(), value=float(value))
+            for day, value in daily_series["views"]
+        ]
     )
     rows = list(repo.list_between(start=period.start, end=period.end, channel=channel))
     labels, has_synthetic = _labels_from_rows(rows)
@@ -150,6 +161,7 @@ def get_overview(
         traffic_anomalies=anomalies,
         dataset_labels=labels,
         has_synthetic=has_synthetic,
+        daily_series=daily_series,
     )
 
 
