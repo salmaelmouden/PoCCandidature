@@ -12,7 +12,12 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 from app.db.repositories import IngestRunRepository
-from scripts.refresh_catalogue import _suppressed_by_backoff, backoff_delay
+from scripts.refresh_catalogue import (
+    _suppressed_by_backoff,
+    backoff_delay,
+    cycle_ok,
+    redact_credentials,
+)
 
 
 def _run(session, *, ok: bool, finished_at: datetime) -> None:
@@ -36,6 +41,68 @@ def _run(session, *, ok: bool, finished_at: datetime) -> None:
 
 
 NOW = datetime(2026, 8, 24, 12, 0, tzinfo=timezone.utc)
+
+
+# ------------------------------------------ credentials must not reach the page
+
+
+def test_youtube_key_is_stripped_from_an_httpx_error() -> None:
+    """The realistic leak: httpx puts the whole request URL in its message, and
+    ingest_runs.error is rendered verbatim on a public, unauthenticated page."""
+    raw = (
+        "ingest: Client error '403 Forbidden' for url "
+        "'https://www.googleapis.com/youtube/v3/search?part=id"
+        "&channelId=UCRCC&key=AIzaSyD-REAL-LOOKING-SECRET-VALUE'"
+    )
+    cleaned = redact_credentials(raw)
+    assert "AIzaSyD-REAL-LOOKING-SECRET-VALUE" not in cleaned
+    assert "key=[redacted]" in cleaned
+    # The diagnostic value has to survive the redaction, or nobody will use it.
+    assert "403 Forbidden" in cleaned
+    assert "channelId=UCRCC" in cleaned
+
+
+def test_other_credential_parameter_names_are_covered() -> None:
+    for param in ("api_key", "apikey", "access_token", "token", "password"):
+        cleaned = redact_credentials(f"boom https://x.test/a?{param}=SUPERSECRET&b=1")
+        assert "SUPERSECRET" not in cleaned, param
+        assert "b=1" in cleaned, param
+
+
+def test_redaction_is_case_insensitive() -> None:
+    assert "SECRET" not in redact_credentials("https://x.test/a?KEY=SECRET")
+
+
+def test_ordinary_errors_pass_through_untouched() -> None:
+    assert redact_credentials("classify: rate limited") == "classify: rate limited"
+
+
+def test_none_and_empty_survive() -> None:
+    assert redact_credentials(None) is None
+    assert redact_credentials("") == ""
+
+
+# -------------------------------------------------------- is a cycle healthy?
+
+
+def test_nothing_pending_is_a_healthy_cycle() -> None:
+    """No new videos to classify is the steady state, not a failure."""
+    assert cycle_ok(classified=0, failed=0) is True
+
+
+def test_everything_classified_is_healthy() -> None:
+    assert cycle_ok(classified=353, failed=0) is True
+
+
+def test_partial_progress_is_healthy() -> None:
+    """Some batches landing means the classifier works; the rest follow next cycle."""
+    assert cycle_ok(classified=80, failed=273) is True
+
+
+def test_every_batch_failing_is_not_healthy() -> None:
+    """The case that was silent: the skill absorbs batch failures and returns
+    normally, so this used to record ok=True and disengage the backoff."""
+    assert cycle_ok(classified=0, failed=273) is False
 
 
 # ---------------------------------------------------------------- delay curve

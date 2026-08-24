@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import re
 import signal
 import sys
 import time
@@ -54,6 +55,29 @@ class CycleResult:
     ok: bool
 
 
+_CREDENTIAL_IN_URL = re.compile(
+    r"((?:[?&])(?:key|api_?key|access_token|token|password)=)[^&\s\"'<>]+",
+    re.IGNORECASE,
+)
+
+
+def redact_credentials(error: str | None) -> str | None:
+    """Strip credentials out of an error before it is persisted.
+
+    `ingest_runs.error` is rendered verbatim on the public catalogue page, and
+    what reaches it is raw exception text. httpx puts the full request URL into
+    its messages, so a failing YouTube call raises with `key=<the API key>` in
+    the string — which would then be published to anyone holding the link.
+
+    The same hazard is already handled for logging further down, where httpx's
+    INFO level is silenced precisely because it prints request URLs. This closes
+    the other end of it.
+    """
+    if not error:
+        return error
+    return _CREDENTIAL_IN_URL.sub(r"\1[redacted]", error)
+
+
 def _record(
     factory,
     *,
@@ -72,7 +96,7 @@ def _record(
                 metrics_upserted=result.metrics_upserted,
                 classified=result.classified,
                 ok=result.ok,
-                error=error,
+                error=redact_credentials(error),
             )
     except Exception as exc:  # noqa: BLE001 — bookkeeping must not break the refresh
         logger.error("refresh_bookkeeping_failed error=%s", exc)
@@ -136,17 +160,51 @@ def run_cycle(channel_id: str, *, max_pages: int) -> CycleResult:
         )
         return partial
 
+    ok = cycle_ok(classified=classified.classified, failed=classified.failed)
+    if not ok:
+        logger.error(
+            "refresh_classify_none_succeeded failed_videos=%s — recording cycle as failed",
+            classified.failed,
+        )
+
     result = CycleResult(
         videos_upserted=ingested.videos_upserted,
         metrics_upserted=ingested.metrics_upserted,
         classified=classified.classified,
         classification_failed=classified.failed,
-        ok=True,
+        ok=ok,
     )
     _record(
-        factory, channel_id=channel_id, started_at=started_at, result=result, error=None
+        factory,
+        channel_id=channel_id,
+        started_at=started_at,
+        result=result,
+        # Kept factual and free of operator instructions: this string is rendered
+        # on the public page. The actionable detail goes to the log above.
+        error=(
+            None
+            if ok
+            else f"classification indisponible — {classified.failed} vidéos non classées"
+        ),
     )
     return result
+
+
+def cycle_ok(*, classified: int, failed: int) -> bool:
+    """Did this cycle's classification actually do its job?
+
+    `classify_channel_content` deliberately absorbs a failing batch and continues,
+    so a run in which *every* batch failed still returns normally, with
+    classified=0. Recording that as ok makes the failure invisible in the only
+    two places anyone would look: the backoff stays disengaged, so a dead API key
+    is retried at full cadence and full cost, and the page keeps reporting a
+    healthy "Dernière vérification" while the pending count never moves.
+
+    Partial progress still counts as ok. If some batches landed the classifier
+    works, and the remainder will be picked up next cycle — backing off there
+    would slow down a run that is succeeding.
+    """
+    return not (classified == 0 and failed > 0)
 
 
 def backoff_delay(interval_seconds: int, failures: int) -> int:
