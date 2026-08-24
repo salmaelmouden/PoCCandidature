@@ -16,7 +16,11 @@ build
 .env.*
 !.env.example
 .cursor
-.streamlit
+# NOT the whole .streamlit directory: config.toml is the deployed theme — the
+# colours, fonts and chart palettes Streamlit paints its own widgets with. Ignore
+# it and the public dashboard renders half-styled, with no build error to say so.
+# Only the secrets file must stay out of the image.
+.streamlit/secrets.toml
 *.log
 data/
 backups/
