@@ -123,6 +123,7 @@ class GrowthOrchestratorAgent:
                     channel=payload.channel,
                     as_of=payload.as_of,
                     analyst_report=analyst_report,
+                    data_warnings=payload.data_warnings,
                 ),
             )
             agents_called.append(self._strategist.name)
