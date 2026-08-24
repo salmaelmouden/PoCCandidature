@@ -165,6 +165,57 @@ _TOPIC_CONV: dict[Topic, float] = {
     Topic.BUDGETING: 1.35,
 }
 
+# --- Stage rates -----------------------------------------------------------
+#
+# Declared here rather than inline in `_build_acquisitions` so that the funnel
+# invariants in `tests/test_synthetic_funnel_invariants.py` can derive the band
+# each stage must fall inside. A rate buried in a function body can only be
+# asserted against by copying it into the test, and a test that copies the value
+# it checks cannot fail for the right reason.
+
+_BASE_SIGNUP_RATE = 0.08
+_ACTIVATE_RATE = 0.55
+_BASE_PREMIUM_RATE = 0.12
+
+_DEFAULT_VISIT_RATE = 0.22
+_VISIT_RATE: dict[Channel, float] = {
+    Channel.YOUTUBE: 0.18,
+    Channel.ORGANIC_SEARCH: _DEFAULT_VISIT_RATE,
+    Channel.LINKEDIN: _DEFAULT_VISIT_RATE,
+    Channel.INSTAGRAM: _DEFAULT_VISIT_RATE,
+    Channel.PAID: 0.28,
+    Channel.DIRECT: _DEFAULT_VISIT_RATE,
+}
+
+_SIGNUP_CHANNEL_MULT: dict[Channel, float] = {
+    Channel.YOUTUBE: 1.0,
+    Channel.ORGANIC_SEARCH: 1.15,
+    Channel.LINKEDIN: 1.0,
+    Channel.INSTAGRAM: 0.7,
+    Channel.PAID: 1.0,
+    Channel.DIRECT: 1.0,
+}
+
+# YouTube is handled separately: it is the channel carrying the seeded decline
+# narrative, so its multiplier depends on the window (see `_PREMIUM_YOUTUBE_*`).
+_PREMIUM_CHANNEL_MULT: dict[Channel, float] = {
+    Channel.YOUTUBE: 1.0,
+    Channel.ORGANIC_SEARCH: 1.1,
+    Channel.LINKEDIN: 1.0,
+    Channel.INSTAGRAM: 1.0,
+    Channel.PAID: 0.9,
+    Channel.DIRECT: 1.0,
+}
+_PREMIUM_YOUTUBE_BASE = 0.95
+_PREMIUM_YOUTUBE_DECLINE = 0.55
+
+# Multiplicative jitter bounds, per stage.
+_JITTER_VIEWS = (0.9, 1.1)
+_JITTER_VISITS = (0.9, 1.05)
+_JITTER_SIGNUPS = (0.9, 1.05)
+_JITTER_ACTIVATED = (0.92, 1.05)
+_JITTER_PREMIUM = (0.9, 1.05)
+
 
 def generate_synthetic_dataset(
     *,
@@ -280,6 +331,32 @@ def _build_daily_metrics(
     return rows
 
 
+def _jitter(rng: Random, bounds: tuple[float, float]) -> float:
+    return rng.uniform(*bounds)
+
+
+def _round(rng: Random, value: float) -> int:
+    """
+    Round to an integer without biasing the expectation.
+
+    `int()` does not round, it floors. At the `day × channel × topic` grain the
+    funnel's lower stages carry single-digit counts, so flooring is not noise —
+    it is a systematic downward drag that grows as the operand shrinks. Measured
+    on the previous implementation: activation ran 8 % under its configured rate,
+    and Premium collapsed to 0.22 % against a configured ~12 %, because
+    `int(3 * 0.13) == 0` on nearly every row.
+
+    `round()` would only move the bias rather than remove it — 0.39 still becomes
+    0. Stochastic rounding carries the fractional part as a probability, so
+    E[_round(x)] == x while the result stays an integer. Draws come from the
+    seeded Random, so the dataset remains reproducible.
+    """
+    if value <= 0:
+        return 0
+    floor = int(value)
+    return floor + (1 if rng.random() < value - floor else 0)
+
+
 def _build_acquisitions(
     rng: Random,
     videos: list[SyntheticVideo],
@@ -302,31 +379,25 @@ def _build_acquisitions(
             for topic in Topic:
                 topic_videos = video_by_topic[topic.value]
                 base = _CHANNEL_BASE_VIEWS[channel] * _TOPIC_REACH[topic]
-                views = int(base * weekend_factor * anomaly * rng.uniform(0.9, 1.1) / len(Topic))
+                views = _round(
+                    rng, base * weekend_factor * anomaly * _jitter(rng, _JITTER_VIEWS) / len(Topic)
+                )
 
-                visit_rate = 0.18 if channel == Channel.YOUTUBE else 0.22
-                if channel == Channel.PAID:
-                    visit_rate = 0.28
-                visits = max(0, int(views * visit_rate * rng.uniform(0.9, 1.05)))
+                visits = _round(rng, views * _VISIT_RATE[channel] * _jitter(rng, _JITTER_VISITS))
 
-                signup_rate = 0.08 * _TOPIC_CONV[topic]
-                if channel == Channel.ORGANIC_SEARCH:
-                    signup_rate *= 1.15
-                if channel == Channel.INSTAGRAM:
-                    signup_rate *= 0.7
-                signups = max(0, int(visits * signup_rate * rng.uniform(0.9, 1.05)))
+                signup_rate = _BASE_SIGNUP_RATE * _TOPIC_CONV[topic] * _SIGNUP_CHANNEL_MULT[channel]
+                signups = _round(rng, visits * signup_rate * _jitter(rng, _JITTER_SIGNUPS))
 
-                activate_rate = 0.55
-                activated = max(0, int(signups * activate_rate * rng.uniform(0.92, 1.05)))
+                activated = _round(rng, signups * _ACTIVATE_RATE * _jitter(rng, _JITTER_ACTIVATED))
 
-                premium_rate = 0.12 * _TOPIC_CONV[topic]
+                premium_rate = _BASE_PREMIUM_RATE * _TOPIC_CONV[topic]
                 if channel == Channel.YOUTUBE:
-                    premium_rate *= 0.55 if in_decline else 0.95
-                elif channel == Channel.PAID:
-                    premium_rate *= 0.9
-                elif channel == Channel.ORGANIC_SEARCH:
-                    premium_rate *= 1.1
-                premium = max(0, int(activated * premium_rate * rng.uniform(0.9, 1.05)))
+                    premium_rate *= (
+                        _PREMIUM_YOUTUBE_DECLINE if in_decline else _PREMIUM_YOUTUBE_BASE
+                    )
+                else:
+                    premium_rate *= _PREMIUM_CHANNEL_MULT[channel]
+                premium = _round(rng, activated * premium_rate * _jitter(rng, _JITTER_PREMIUM))
 
                 if channel == Channel.YOUTUBE:
                     # Attribute YouTube acquisition to a topic video
