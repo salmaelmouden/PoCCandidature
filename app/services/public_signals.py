@@ -10,6 +10,11 @@ from sqlalchemy.orm import Session
 
 from app.db.models import Video, VideoClassification, VideoDailyMetric
 from app.db.repositories import IngestRunRepository
+from app.skills.catalogue_movement import (
+    MovementReport,
+    VideoSnapshotPair,
+    analyse_movement,
+)
 from app.skills.content_classification.schemas import CLASSIFICATION_VERSION
 from app.skills.public_signal_analysis import (
     PublicSignalReport,
@@ -141,6 +146,98 @@ def load_public_signals(
             hook_type=classification.hook_type,
         )
     return list(signals.values())
+
+
+def load_snapshot_pair(
+    session: Session,
+    *,
+    dataset_label: str = "youtube_api",
+    version: str = CLASSIFICATION_VERSION,
+) -> tuple[list[VideoSnapshotPair], date, date] | None:
+    """
+    Load each video's views at the two most recent snapshot dates.
+
+    Returns `None` when fewer than two dates exist — the caller must be able to say
+    "first measurement point" rather than fabricate a comparison.
+
+    Unlike `load_public_signals`, videos are **not** dropped for carrying a
+    keyword-fallback label. Format and publication age do not depend on
+    classification, and they carry the headline movement finding; excluding rows
+    would shrink that coverage for a reason irrelevant to it. Instead the untrusted
+    labels are nulled out, so topic and hook aggregate over trusted labels only while
+    format and age see the whole catalogue.
+    """
+    dates = list(
+        session.scalars(
+            select(VideoDailyMetric.metric_date)
+            .join(Video, Video.id == VideoDailyMetric.video_id)
+            .where(Video.dataset_label == dataset_label)
+            .distinct()
+            .order_by(VideoDailyMetric.metric_date.desc())
+            .limit(2)
+        )
+    )
+    if len(dates) < 2:
+        return None
+    period_end, period_start = dates[0], dates[1]
+
+    rows = session.execute(
+        select(Video, VideoDailyMetric, VideoClassification)
+        .join(VideoDailyMetric, VideoDailyMetric.video_id == Video.id)
+        .outerjoin(
+            VideoClassification,
+            (VideoClassification.video_id == Video.id)
+            & (VideoClassification.version == version),
+        )
+        .where(
+            Video.dataset_label == dataset_label,
+            VideoDailyMetric.metric_date.in_((period_start, period_end)),
+        )
+    )
+
+    seen: dict[str, dict] = {}
+    for video, metric, classification in rows:
+        entry = seen.setdefault(
+            video.youtube_video_id,
+            {"video": video, "classification": classification, "start": None, "end": None},
+        )
+        entry["start" if metric.metric_date == period_start else "end"] = metric.views
+
+    pairs: list[VideoSnapshotPair] = []
+    for entry in seen.values():
+        if entry["start"] is None or entry["end"] is None:
+            continue  # published between snapshots — no movement to measure yet
+        video, classification = entry["video"], entry["classification"]
+        trusted = classification is not None and classification.classified_by != FALLBACK_BACKEND
+        pairs.append(
+            VideoSnapshotPair(
+                youtube_video_id=video.youtube_video_id,
+                title=video.title,
+                published_at=video.published_at,
+                duration_seconds=video.duration_seconds,
+                topic=classification.topic if trusted else None,
+                hook_type=classification.hook_type if trusted else None,
+                views_start=entry["start"],
+                views_end=entry["end"],
+            )
+        )
+    return pairs, period_start, period_end
+
+
+def build_movement_report(
+    session: Session,
+    *,
+    dataset_label: str = "youtube_api",
+    version: str = CLASSIFICATION_VERSION,
+) -> MovementReport | None:
+    """Load two snapshots, then analyse. `None` when there is no history yet."""
+    loaded = load_snapshot_pair(session, dataset_label=dataset_label, version=version)
+    if loaded is None:
+        return None
+    pairs, period_start, period_end = loaded
+    if not pairs:
+        return None
+    return analyse_movement(pairs, period_start=period_start, period_end=period_end)
 
 
 def build_public_signal_report(
