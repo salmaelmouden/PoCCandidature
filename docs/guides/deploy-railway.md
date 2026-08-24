@@ -9,10 +9,11 @@ One repository, one image, several services that differ only by start command:
 |---|---|---|---|
 | **Postgres** | managed database plugin | — | no |
 | **dashboard** | the Streamlit app (default `CMD`) | `railway.json` | **yes — this is the link you share** |
-| **refresher** | `refresh_catalogue.py --loop` — without it the catalogue stays empty | `railway.refresher.json` | no |
+| **refresher** | cron, `*/10` — one `refresh_catalogue.py` cycle per run. Without it the catalogue stays empty | `railway.refresher.json` | no |
 | **api** | FastAPI for n8n, optional | `railway.api.json` | only if n8n needs to reach it |
 
-Cost is roughly $5/month on the Hobby plan; the refresher is idle most of the time.
+Cost is roughly $5/month on the Hobby plan. The refresher is a cron job, so it is
+billed only for the seconds it runs rather than for sitting idle.
 
 ## Every service must bind `$PORT`
 
@@ -92,16 +93,18 @@ has nothing to read.
 
 **New** → **GitHub Repo** → the same repository, then under **Settings**:
 
-- **Config-as-code path:** `railway.refresher.json`. That file holds the start
-  command (`refresh_catalogue.py --loop --interval-seconds 900`). Set it here
-  rather than typing a **Custom Start Command** — a UI override is invisible from
-  the repo and takes precedence over it, which is how this project spent a
-  deploy running the wrong process on the wrong port.
+- **Config-as-code path:** `railway.refresher.json`. That file makes this a **cron
+  service** — `cronSchedule` `*/10 * * * *`, one cycle per run. Set it here rather
+  than typing a **Custom Start Command**: a UI override is invisible from the repo
+  and takes precedence over it, which is how this project spent a deploy running
+  the wrong process on the wrong port.
 - **Networking:** no domain, and no `PORT` — it has no HTTP server. `PORT` matters
   only for the dashboard and the API.
 
 It declares no healthcheck, on purpose: there is no endpoint to probe, and a
-healthcheck against a process that never listens fails the deploy.
+healthcheck against a process that never listens fails the deploy. Its restart
+policy is `NEVER`, which is what you want for a scheduled job — a cron run that
+exits has finished, not crashed, and restarting it would double the cadence.
 
 Give it the same variables as the dashboard — including its own
 `DATABASE_URL=${{Postgres.DATABASE_URL}}` reference, which is not inherited:
@@ -128,15 +131,35 @@ cycle from the Railway shell on any service that has the variables:
 python scripts/refresh_catalogue.py
 ```
 
-With no `--loop` the script runs exactly one cycle and exits. That is enough to
-make **Catalogue public** render; the service above is what keeps it current.
+The script runs exactly one cycle and exits. That is enough to make **Catalogue
+public** render; the cron service above is what keeps it current.
 
-### Why a loop rather than a cron
+Note the absence of `--respect-backoff` here. A manual seed should never be
+silently skipped because an earlier run failed, so the flag is opt-in and the
+cron service is the only thing that passes it.
 
-Railway cron jobs fire at most once a minute and spin a container each time; a
-long-lived loop costs less and keeps the backoff state that stops a broken key
-from hammering the API all day. If you prefer cron, use `--interval-seconds`'s
-absence — `refresh_catalogue.py` with no `--loop` runs exactly one cycle and exits.
+### Why cron rather than a long-lived loop
+
+The script still supports `--loop`, but the deployed service does not use it.
+
+Cron is cheaper. Railway bills by resource-second, and a loop that sleeps 10
+minutes between 8-second cycles still holds its memory allocation for all 720
+hours in a month. The cron service is billed for the seconds it actually runs —
+a few hours a month rather than all of them. An earlier version of this guide
+claimed the opposite; it was wrong.
+
+The reason it *was* a loop is that exponential backoff lived in a local variable,
+and a fresh container per run resets it to zero. That mattered: with a revoked key
+or an exhausted quota, a naive cron would retry at full cadence all day, spending
+the daily allowance on calls that cannot succeed.
+
+So the counter moved into the database. `IngestRunRepository.consecutive_failures()`
+counts failed runs since the last successful one, and `--respect-backoff` widens
+the interval from that count — doubling per failure, capped at 8x — before the run
+touches the API at all. The state now outlives the process, which is what made
+cron viable. If the check itself cannot reach the database it lets the run
+proceed: pacing is an optimisation, and it must never be the reason nothing
+refreshes.
 
 ## 4. First data load
 
@@ -169,15 +192,24 @@ catalogue.
 
 ## 5. Quota and cost guards
 
-| Cadence | YouTube units/day | Share of the free 10,000 |
-|---|---|---|
-| 15 min (default) | ~3,840 | 38 % |
-| 10 min | ~5,760 | 58 % |
-| 5 min | ~11,520 | **over quota** |
+One full pass over ~950 videos costs ~40 of the 10,000 free daily YouTube units.
 
-Do not go below 10 minutes. YouTube's public counters update with a lag anyway, so
-a faster cadence buys no freshness and risks exhausting the daily allowance — after
-which the refresher backs off and the page goes stale.
+| Cadence | `cronSchedule` | YouTube units/day | Share of the free 10,000 |
+|---|---|---|---|
+| 15 min | `*/15 * * * *` | ~3,840 | 38 % |
+| **10 min (default)** | `*/10 * * * *` | ~5,760 | **58 %** |
+| 5 min | `*/5 * * * *` | ~11,520 | **over quota — do not** |
+
+**10 minutes is the floor.** At 5 the daily allowance is gone by mid-afternoon,
+the refresher backs off, and the page ends up *staler* than it would have been on
+a slower cadence. YouTube's public counters update with hours of lag regardless,
+so polling faster buys no real freshness — only quota risk.
+
+If you change the cadence, change it in **two places**: `cronSchedule` and the
+`--interval-seconds` in the same file. The first decides when runs fire; the
+second is what the backoff multiplies when they fail. Leaving them inconsistent
+does not break anything, but the backoff will pace itself against the wrong
+baseline.
 
 ## 6. Optional: the API service
 

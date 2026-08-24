@@ -5,8 +5,8 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "exec python scripts/refresh_catalogue.py --loop --interval-seconds 900",
-    "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 5
+    "startCommand": "exec python scripts/refresh_catalogue.py --respect-backoff --interval-seconds 600",
+    "cronSchedule": "*/10 * * * *",
+    "restartPolicyType": "NEVER"
   }
 }
