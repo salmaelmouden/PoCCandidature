@@ -7,7 +7,7 @@ from decimal import Decimal
 from typing import Any, Sequence
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db.models import (
@@ -120,6 +120,23 @@ class IngestRunRepository:
                 .limit(1)
             )
         return self._session.scalar(statement)
+
+    def consecutive_failures(self) -> int:
+        """How many runs have failed since the last successful one.
+
+        Exponential backoff needs to survive the process. A long-lived loop can
+        hold the counter in memory, but a cron job starts a fresh container every
+        cycle, so an in-memory counter resets to zero every time and the backoff
+        never engages — a dead API key would be retried at full cadence all day,
+        burning the daily quota on calls that cannot succeed.
+
+        The run history already records the answer, so read it from there.
+        """
+        statement = select(func.count()).select_from(IngestRun).where(IngestRun.ok.is_(False))
+        last_ok = self.latest(only_successful=True)
+        if last_ok is not None:
+            statement = statement.where(IngestRun.finished_at > last_ok.finished_at)
+        return int(self._session.scalar(statement) or 0)
 
 
 class VideoClassificationRepository:

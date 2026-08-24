@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import re
 import signal
 import sys
 import time
@@ -54,6 +55,29 @@ class CycleResult:
     ok: bool
 
 
+_CREDENTIAL_IN_URL = re.compile(
+    r"((?:[?&])(?:key|api_?key|access_token|token|password)=)[^&\s\"'<>]+",
+    re.IGNORECASE,
+)
+
+
+def redact_credentials(error: str | None) -> str | None:
+    """Strip credentials out of an error before it is persisted.
+
+    `ingest_runs.error` is rendered verbatim on the public catalogue page, and
+    what reaches it is raw exception text. httpx puts the full request URL into
+    its messages, so a failing YouTube call raises with `key=<the API key>` in
+    the string — which would then be published to anyone holding the link.
+
+    The same hazard is already handled for logging further down, where httpx's
+    INFO level is silenced precisely because it prints request URLs. This closes
+    the other end of it.
+    """
+    if not error:
+        return error
+    return _CREDENTIAL_IN_URL.sub(r"\1[redacted]", error)
+
+
 def _record(
     factory,
     *,
@@ -72,7 +96,7 @@ def _record(
                 metrics_upserted=result.metrics_upserted,
                 classified=result.classified,
                 ok=result.ok,
-                error=error,
+                error=redact_credentials(error),
             )
     except Exception as exc:  # noqa: BLE001 — bookkeeping must not break the refresh
         logger.error("refresh_bookkeeping_failed error=%s", exc)
@@ -136,17 +160,104 @@ def run_cycle(channel_id: str, *, max_pages: int) -> CycleResult:
         )
         return partial
 
+    ok = cycle_ok(classified=classified.classified, failed=classified.failed)
+    if not ok:
+        logger.error(
+            "refresh_classify_none_succeeded failed_videos=%s — recording cycle as failed",
+            classified.failed,
+        )
+
     result = CycleResult(
         videos_upserted=ingested.videos_upserted,
         metrics_upserted=ingested.metrics_upserted,
         classified=classified.classified,
         classification_failed=classified.failed,
-        ok=True,
+        ok=ok,
     )
     _record(
-        factory, channel_id=channel_id, started_at=started_at, result=result, error=None
+        factory,
+        channel_id=channel_id,
+        started_at=started_at,
+        result=result,
+        # Kept factual and free of operator instructions: this string is rendered
+        # on the public page. The actionable detail goes to the log above.
+        error=(
+            None
+            if ok
+            else f"classification indisponible — {classified.failed} vidéos non classées"
+        ),
     )
     return result
+
+
+def cycle_ok(*, classified: int, failed: int) -> bool:
+    """Did this cycle's classification actually do its job?
+
+    `classify_channel_content` deliberately absorbs a failing batch and continues,
+    so a run in which *every* batch failed still returns normally, with
+    classified=0. Recording that as ok makes the failure invisible in the only
+    two places anyone would look: the backoff stays disengaged, so a dead API key
+    is retried at full cadence and full cost, and the page keeps reporting a
+    healthy "Dernière vérification" while the pending count never moves.
+
+    Partial progress still counts as ok. If some batches landed the classifier
+    works, and the remainder will be picked up next cycle — backing off there
+    would slow down a run that is succeeding.
+    """
+    return not (classified == 0 and failed > 0)
+
+
+def backoff_delay(interval_seconds: int, failures: int) -> int:
+    """Seconds to wait after `failures` consecutive failed cycles.
+
+    Doubles per failure, capped at 8x so a 10-minute cadence stretches to at most
+    80 minutes rather than growing without bound.
+    """
+    if failures <= 0:
+        return interval_seconds
+    return interval_seconds * min(2**failures, 8)
+
+
+def _suppressed_by_backoff(interval_seconds: int) -> bool:
+    """Should this scheduled run stand down?
+
+    Only consulted with --respect-backoff, i.e. under cron. The process cannot
+    remember previous failures, so ask the run history: if the last cycles failed
+    and the widened interval has not elapsed, skip without touching the API.
+
+    Any error here is deliberately non-fatal — a backoff check that cannot read
+    the database must not stop the refresh it is meant to pace.
+    """
+    try:
+        with session_scope() as session:
+            runs = IngestRunRepository(session)
+            failures = runs.consecutive_failures()
+            if failures == 0:
+                return False
+            last = runs.latest()
+            if last is None:
+                return False
+            delay = backoff_delay(interval_seconds, failures)
+            # finished_at is always written in UTC, but not every backend hands it
+            # back with a tzinfo — SQLite drops it. Reading a naive value as local
+            # time would shift the comparison by the host's UTC offset and silently
+            # defeat the backoff, so pin it to UTC rather than assume.
+            finished = last.finished_at
+            if finished.tzinfo is None:
+                finished = finished.replace(tzinfo=timezone.utc)
+            waited = (datetime.now(timezone.utc) - finished).total_seconds()
+            if waited < delay:
+                logger.warning(
+                    "refresh_backoff failures=%s waited=%ss needs=%ss — skipping this run",
+                    failures,
+                    int(waited),
+                    delay,
+                )
+                return True
+            return False
+    except Exception as exc:  # noqa: BLE001 — never let pacing block refreshing
+        logger.warning("refresh_backoff_check_failed %s — running anyway", exc)
+        return False
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -160,7 +271,16 @@ def main(argv: list[str] | None = None) -> int:
         "--interval-seconds",
         type=int,
         default=900,
-        help="Loop cadence (default 900 = 15 min, ~38%% of the free daily quota)",
+        help="Cadence (default 900 = 15 min, ~38%% of the free daily quota)",
+    )
+    parser.add_argument(
+        "--respect-backoff",
+        action="store_true",
+        help=(
+            "Skip this run if recent runs failed and the backoff window has not "
+            "elapsed. For cron, which cannot keep the counter in memory. Manual "
+            "one-shot runs omit it so seeding is never silently skipped."
+        ),
     )
     args = parser.parse_args(argv)
 
@@ -180,11 +300,17 @@ def main(argv: list[str] | None = None) -> int:
     signal.signal(signal.SIGINT, _request_stop)
 
     logger.info(
-        "refresh_start channel=%s loop=%s interval=%ss",
+        "refresh_start channel=%s loop=%s interval=%ss respect_backoff=%s",
         channel_id,
         args.loop,
         args.interval_seconds,
+        args.respect_backoff,
     )
+
+    # Checked before the first cycle in either mode: a restarted loop container
+    # has forgotten its counter just as thoroughly as a fresh cron run has.
+    if args.respect_backoff and _suppressed_by_backoff(args.interval_seconds):
+        return 0
 
     failures = 0
     while True:
@@ -209,8 +335,8 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         # Back off on repeated failure so a broken key or quota exhaustion does not
-        # hammer the API every 15 minutes for a day.
-        delay = args.interval_seconds * min(2**failures, 8) if failures else args.interval_seconds
+        # hammer the API at full cadence for a day.
+        delay = backoff_delay(args.interval_seconds, failures)
         if failures:
             logger.warning("refresh_backoff failures=%s next_in=%ss", failures, delay)
 
