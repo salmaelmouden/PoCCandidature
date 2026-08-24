@@ -1,0 +1,12 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile"
+  },
+  "deploy": {
+    "startCommand": "exec python scripts/refresh_catalogue.py --respect-backoff --interval-seconds 600",
+    "cronSchedule": "*/10 * * * *",
+    "restartPolicyType": "NEVER"
+  }
+}
