@@ -13,6 +13,7 @@ from app.agents.growth_data_analyst_agent.schemas import (
     SemanticLabel,
     ToolInvocation,
 )
+from app.skills.metric_validation import DataWarning
 
 
 class Priority(StrEnum):
@@ -27,6 +28,10 @@ class StrategistQuestion(BaseModel):
     channel: str | None = None
     as_of: date | None = None
     analyst_report: AnalystReport | None = None
+    #: Verdicts from `metric_validation`, produced by the application service before
+    #: the agent runs. Passed in rather than fetched: the warnings must also reach
+    #: reports generated with no agent in the loop, so the service owns the call.
+    data_warnings: list[DataWarning] = Field(default_factory=list)
 
 
 class Recommendation(BaseModel):
@@ -36,6 +41,10 @@ class Recommendation(BaseModel):
     rationale: str
     grounded_in: str | None = None
     numbers: dict[str, float | int | str | None] = Field(default_factory=dict)
+    #: Funnel stage this recommendation acts on, when it acts on one. Declared as a
+    #: field rather than inferred from prose so the guardrail can match a
+    #: recommendation to a warning without parsing English.
+    target_stage: str | None = None
 
 
 class StrategyReport(BaseModel):
@@ -63,4 +72,5 @@ __all__ = [
     "EvidenceClaim",
     "AnalystReport",
     "ToolInvocation",
+    "DataWarning",
 ]

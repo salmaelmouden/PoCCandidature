@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from app.agents.growth_data_analyst_agent.schemas import AnalystReport, EvidenceClaim
 from app.agents.growth_experiment_analyst_agent.schemas import ExperimentAnalystReport
 from app.agents.growth_strategist_agent.schemas import StrategyReport
+from app.skills.metric_validation import DataWarning
 
 
 class RouteKind(StrEnum):
@@ -23,6 +24,11 @@ class OrchestratorQuestion(BaseModel):
     days: int = Field(default=30, ge=1, le=365)
     channel: str | None = None
     as_of: date | None = None
+    #: Carried through to the strategist untouched (ADR-009). The orchestrator does
+    #: not evaluate data quality itself — that would be reimplementing specialist
+    #: logic, which ADR-004 forbids. It only makes sure the verdict reaches the agent
+    #: whose output the gate constrains.
+    data_warnings: list[DataWarning] = Field(default_factory=list)
 
 
 class OrchestratorResponse(BaseModel):

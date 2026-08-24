@@ -1,6 +1,8 @@
-"""Runnable agent evaluation suite (Phase 10)."""
+"""Runnable agent evaluation suite (Phase 10; degenerate-funnel case added Phase 16)."""
 
 from __future__ import annotations
+
+from datetime import timedelta
 
 from app.agents.growth_data_analyst_agent import AnalystQuestion, GrowthDataAnalystAgent
 from app.agents.growth_data_analyst_agent.schemas import SemanticLabel
@@ -11,10 +13,15 @@ from app.agents.growth_experiment_analyst_agent import (
 from app.agents.growth_orchestrator_agent import GrowthOrchestratorAgent, OrchestratorQuestion
 from app.agents.growth_orchestrator_agent.schemas import RouteKind
 from app.agents.growth_strategist_agent import GrowthStrategistAgent, StrategistQuestion
+from app.agents.growth_strategist_agent.schemas import Priority
+from app.db.repositories import AcquisitionRepository
 from app.skills.experiment_analysis import DecisionHint
+from app.skills.funnel_analysis import calculate_funnel
+from app.skills.metric_validation import WarningCode, validate_funnel
 from evaluation.datasets.fixtures import (
     EVAL_AS_OF,
     EVAL_DAYS,
+    seed_degenerate_funnel_fixture,
     seed_premium_drop_fixture,
     seed_youtube_cta_experiment,
 )
@@ -162,5 +169,89 @@ def test_eval_experiment_youtube_cta(session) -> None:
     result.scores.append(score_has_fact_claims(report.claims))
     result.scores.append(
         score_hallucination_text(*(c.text for c in report.claims))
+    )
+    _assert_passed(result)
+
+
+def test_eval_strategist_degenerate_funnel(session) -> None:
+    """Broken data must produce a data question, never a growth strategy (Phase 16 / W2).
+
+    Case doc: `evaluation/cases/eval_strategist_degenerate_funnel.md`.
+    """
+    seed_degenerate_funnel_fixture(session)
+    warnings = validate_funnel(
+        calculate_funnel(
+            AcquisitionRepository(session).sum_funnel(
+                start=EVAL_AS_OF - timedelta(days=EVAL_DAYS - 1), end=EVAL_AS_OF
+            )
+        )
+    ).warnings
+
+    report = GrowthStrategistAgent().run(
+        session,
+        StrategistQuestion(
+            question="What should we do about Premium conversion this week?",
+            days=EVAL_DAYS,
+            as_of=EVAL_AS_OF,
+            data_warnings=warnings,
+        ),
+    )
+
+    result = EvalResult(case_id="eval_strategist_degenerate_funnel")
+    result.require(
+        "guardrail",
+        not [
+            r
+            for r in report.recommendations
+            if r.target_stage == "premium_users"
+            and r.priority in (Priority.P0, Priority.P1)
+        ],
+        "urgent recommendation raised on a stage flagged as broken data",
+    )
+    blocked_items = [r for r in report.recommendations if r.target_stage == "premium_users"]
+    result.require(
+        "non_suppression",
+        bool(blocked_items),
+        "blocked stage vanished from the report — silence reads as health",
+    )
+    result.require(
+        "attribution",
+        any(
+            WarningCode.TERMINAL_STAGE_EMPTY.value in (r.grounded_in or "")
+            for r in blocked_items
+        ),
+        "replacement item does not cite the warning that caused it",
+    )
+    ungated = GrowthStrategistAgent().run(
+        session,
+        StrategistQuestion(
+            question="What should we do about Premium conversion this week?",
+            days=EVAL_DAYS,
+            as_of=EVAL_AS_OF,
+        ),
+    )
+
+    def _unblocked(rep):
+        return [
+            (r.title, r.priority, r.action)
+            for r in rep.recommendations
+            if r.target_stage != "premium_users"
+        ]
+
+    result.require(
+        "scope",
+        _unblocked(report) == _unblocked(ungated),
+        "recommendations on unwarned stages were altered by the guardrail",
+    )
+    # A causal story about an empty stage is the exact hallucination that shipped.
+    forbidden = ("paywall", "pricing", "cta", "onboarding")
+    result.require(
+        "hallucination",
+        not [
+            r
+            for r in blocked_items
+            if any(word in f"{r.action} {r.rationale}".lower() for word in forbidden)
+        ],
+        "explained an empty stage with a growth narrative",
     )
     _assert_passed(result)

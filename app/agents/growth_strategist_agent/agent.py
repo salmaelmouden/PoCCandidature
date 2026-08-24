@@ -22,6 +22,46 @@ from app.agents.growth_strategist_agent.schemas import (
 )
 from app.agents.growth_strategist_agent.tools import tool_get_analyst_report
 from app.observability import observation
+from app.skills.funnel_analysis.schemas import FUNNEL_STAGE_ORDER
+from app.skills.metric_validation import DataWarning
+
+
+def _stage_mentioned_in(text: str | None) -> str | None:
+    """Which funnel stage a free-text driver refers to, if any.
+
+    The analyst states its bottleneck as prose ("activated_users → premium_users"),
+    so the stage has to be recovered before the guardrail can match a recommendation
+    to a warning. Last match wins: in a transition the stage being acted on is the
+    destination.
+    """
+    if not text:
+        return None
+    lowered = text.lower()
+    found = [stage for stage in FUNNEL_STAGE_ORDER if stage in lowered]
+    return found[-1] if found else None
+
+
+def _verification_recommendation(warning: DataWarning) -> Recommendation:
+    """The item that stands in for withheld advice on an untrustworthy stage.
+
+    Deliberately P2: the whole point is that this is not urgent growth work. The
+    wording stays on the measurement — naming a mechanism (paywall, pricing, CTA)
+    would smuggle back the causal story the warning says we cannot support.
+    """
+    return Recommendation(
+        priority=Priority.P2,
+        title=f"Verify the “{warning.stage}” measurement before acting on it",
+        action=(
+            f"Confirm that “{warning.stage}” is being recorded correctly for this "
+            "period — check the ingestion and aggregation path end to end, and "
+            "compare against a period known to be sound. Resume growth work on this "
+            "stage only once the number is trusted."
+        ),
+        rationale=warning.message,
+        grounded_in=f"{warning.code.value}: {warning.stage}",
+        numbers=dict(warning.numbers),
+        target_stage=warning.stage,
+    )
 
 
 class GrowthStrategistAgent:
@@ -118,6 +158,12 @@ class GrowthStrategistAgent:
                 )
 
         recommendations, claims, insufficient = self._synthesize(payload.question, report)
+        recommendations, gated_claims = self._apply_data_warnings(
+            recommendations, payload.data_warnings
+        )
+        if gated_claims:
+            claims.extend(gated_claims)
+            insufficient = True
         recommendations = recommendations[: self.config.max_recommendations]
         return StrategyReport(
             question=payload.question,
@@ -130,6 +176,58 @@ class GrowthStrategistAgent:
             analyst_primary_driver=report.primary_driver,
             insufficient_evidence=insufficient,
         )
+
+    def _apply_data_warnings(
+        self, recs: list[Recommendation], warnings: list[DataWarning]
+    ) -> tuple[list[Recommendation], list[EvidenceClaim]]:
+        """
+        Deterministic post-condition: no urgency on a stage flagged as broken data.
+
+        This is the guardrail that was missing when an integer-truncation artefact
+        emptied the Premium stage and the playbook answered `[P0] Fix Premium leak on
+        weakest channel`. It runs on the agent's *output*, in Python, so correctness
+        never depends on the model having complied with an instruction (ADR-002,
+        ADR-009).
+
+        Recommendations are replaced, not deleted. Dropping them would leave the
+        report looking healthy, which is the failure mode this exists to prevent —
+        and `03-agents.mdc` requires an agent to state when evidence is insufficient.
+        """
+        blocked = {w.stage for w in warnings if w.blocking}
+        if not blocked:
+            return recs, []
+
+        by_stage = {w.stage: w for w in warnings if w.blocking}
+        kept: list[Recommendation] = []
+        suppressed: list[Recommendation] = []
+        for rec in recs:
+            (suppressed if rec.target_stage in blocked else kept).append(rec)
+
+        # Verification items lead: they must never be the ones truncated away.
+        replacements = [_verification_recommendation(by_stage[s]) for s in sorted(blocked)]
+
+        claims = [
+            EvidenceClaim(
+                label=SemanticLabel.INTERPRETATION,
+                text=(
+                    f"Data quality gate: {len(suppressed)} recommendation(s) on "
+                    f"{', '.join(sorted(blocked))} withheld — the stage is flagged as "
+                    "unreliable, so the measurement is verified before it is acted on."
+                ),
+                source_tool="metric_validation",
+                numbers={"suppressed": len(suppressed), "blocked_stages": len(blocked)},
+            )
+        ]
+        claims.extend(
+            EvidenceClaim(
+                label=SemanticLabel.FACT,
+                text=by_stage[stage].message,
+                source_tool="metric_validation",
+                numbers=dict(by_stage[stage].numbers),
+            )
+            for stage in sorted(blocked)
+        )
+        return replacements + kept, claims
 
     def _normalize(self, question: StrategistQuestion | str | None) -> StrategistQuestion:
         if question is None:
@@ -244,6 +342,7 @@ class GrowthStrategistAgent:
                     ),
                     grounded_in=grounded,
                     numbers={"driver": grounded},
+                    target_stage="premium_users",
                 )
             )
 
@@ -261,6 +360,7 @@ class GrowthStrategistAgent:
                     rationale="Analyst identified the highest dropoff stage as the primary constraint.",
                     grounded_in=stage,
                     numbers={"driver": stage},
+                    target_stage=_stage_mentioned_in(stage),
                 )
             )
 
@@ -301,6 +401,7 @@ class GrowthStrategistAgent:
                     ),
                     rationale="Analyst evidence shows Premium/period pressure without a sharper driver.",
                     grounded_in=report.primary_driver,
+                    target_stage="premium_users",
                 )
             )
 

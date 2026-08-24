@@ -30,6 +30,10 @@ class WeeklyReportInput(BaseModel):
     recommendations: list[str] = Field(default_factory=list)
     dataset_labels: list[str] = Field(default_factory=list)
     has_synthetic: bool = False
+    #: Verdicts from `metric_validation`, supplied by the application service. Rendered
+    #: ahead of the KPIs when present: a reader who has already absorbed the numbers
+    #: has already believed them, so a caveat underneath arrives too late (ADR-009).
+    data_warnings: list[dict] = Field(default_factory=list)
 
 
 class WeeklyGrowthReport(BaseModel):

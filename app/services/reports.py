@@ -14,6 +14,7 @@ from app.services.dashboard import (
     get_content,
     get_overview,
 )
+from app.skills.metric_validation import validate_funnel
 from app.skills.report_generation import WeeklyGrowthReport, generate_weekly_report
 
 
@@ -36,6 +37,11 @@ def build_weekly_report(
         acquisition = get_acquisition(session, days=days, as_of=as_of)
         content = get_content(session, days=days, channel=channel, as_of=as_of)
 
+        # Data quality is judged here, not inside an agent: the verdict has to reach
+        # the report even when no agent runs (ADR-009). A weekly report built with
+        # `include_orchestrator=False` still needs to say that its funnel is suspect.
+        validation = validate_funnel(overview.funnel)
+
         orchestrator_summary = None
         recommendations: list[str] = []
         if include_orchestrator:
@@ -46,6 +52,7 @@ def build_weekly_report(
                     days=days,
                     channel=channel,
                     as_of=as_of,
+                    data_warnings=validation.warnings,
                 ),
             )
             orchestrator_summary = orch.summary
@@ -90,6 +97,15 @@ def build_weekly_report(
                 "recommendations": recommendations,
                 "dataset_labels": sorted(overview.dataset_labels),
                 "has_synthetic": overview.has_synthetic,
+                "data_warnings": [
+                    {
+                        "code": w.code.value,
+                        "stage": w.stage,
+                        "blocking": w.blocking,
+                        "message": w.message,
+                    }
+                    for w in validation.warnings
+                ],
             }
         )
         span.update(output={"title": report.title, "sections": len(report.sections)})

@@ -14,6 +14,9 @@ A skill is a reusable, typed capability. Prefer deterministic Python. Independen
 | `youtube_ingestion` | **Phase 3** | Fetch/normalize/persist YouTube metadata and metrics |
 | `experiment_analysis` | **Phase 7** | Rates, deltas, CIs, significance |
 | `report_generation` | **Phase 9** | Weekly growth report from analytical results |
+| `content_classification` | **Phase 11** | LLM `topic` + `hook_type` labels, keyword fallback |
+| `public_signal_analysis` | **Phase 12** | Cohort-normalised reach index, engagement, per format |
+| `metric_validation` | **Phase 16** | Flags results that are data faults, not findings |
 
 ## Naming
 

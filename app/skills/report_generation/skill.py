@@ -14,7 +14,10 @@ def generate_weekly_report(payload: WeeklyReportInput | dict) -> WeeklyGrowthRep
     if data.channel:
         title = f"Weekly Growth Report — {data.channel}"
 
-    sections: list[ReportSection] = [
+    sections: list[ReportSection] = []
+    if data.data_warnings:
+        sections.append(_data_quality_section(data))
+    sections += [
         _kpi_section(data),
         _funnel_section(data),
         _channel_section(data),
@@ -40,6 +43,33 @@ def _fmt_delta(value: float | None) -> str:
         return "n/a"
     sign = "+" if value >= 0 else ""
     return f"{sign}{value:.1%}"
+
+
+def _data_quality_section(data: WeeklyReportInput) -> ReportSection:
+    """Lead with the caveat when there is one.
+
+    Placed first because reading order is belief order: a caveat printed under the
+    numbers arrives after the reader has already acted on them. This section is the
+    visible half of the guardrail in ADR-009 — the other half withholds the urgent
+    recommendations that the flagged stage would otherwise have generated.
+    """
+    blocking = [w for w in data.data_warnings if w.get("blocking")]
+    body = (
+        "Read the figures below with this in mind — one or more stages did not pass "
+        "validation, so parts of this report are about the measurement, not the funnel."
+    )
+    if blocking:
+        stages = ", ".join(sorted({str(w.get("stage")) for w in blocking}))
+        body = (
+            f"**{stages}** did not pass validation. Recommendations on "
+            f"{'that stage' if len(blocking) == 1 else 'those stages'} are withheld "
+            "until the number is trusted."
+        )
+    return ReportSection(
+        title="⚠ Data quality",
+        body=body,
+        bullets=[str(w.get("message", "")) for w in data.data_warnings],
+    )
 
 
 def _kpi_section(data: WeeklyReportInput) -> ReportSection:
