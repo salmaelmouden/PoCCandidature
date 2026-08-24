@@ -10,7 +10,9 @@ AI-native growth analytics, decision support, and automation for content-driven 
 
 ## Current status
 
-**Phase 15** — dashboard design system: French UI, themed charts, light/dark.
+**Phase 16** — trustworthy automation (W1 + W2 shipped, W3 + W4 pending) and the
+**En bref** landing page: the three-minute reading of the real catalogue, every
+number derived from the same live report as the full analysis.
 
 ```bash
 make install      # once (venv is mounted into app containers)
@@ -279,3 +281,21 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
       into a repository
 - [x] `tests/dashboard/` covers tokens, French formatting, HTML escaping and every
       chart spec in both themes
+
+### Phase 16
+
+- [x] W1 — stochastic rounding in the synthetic generator; the `int()` truncation at
+      day × channel × topic grain had floored the Premium stage to 0,22 % against a
+      configured ~12 %, and the chain was shipping a confident `[P0] Fix Premium leak`
+      built on it. Per-transition invariants derived from the module constants
+- [x] W2 — `metric_validation` skill + a deterministic post-condition that downgrades
+      any P0/P1 aimed at a stage a warning covers, so the fix never depends on the
+      model obeying a prompt (ADR-009). Eval case + fixture for the degenerate funnel
+- [x] **En bref** landing page (`dashboard/views/brief.py`) — three readings of the
+      real catalogue with the move each implies, derived through `dashboard/brief.py`
+      from the same live report the full page reads, so the summary cannot drift from
+      the analysis it summarises
+- [x] Navigation reordered and renamed: the real catalogue leads, the synthetic funnel
+      sits under a group that says so before a reader clicks it
+- [ ] W3 — `memo_generation`: weekly French editorial memo over the real catalogue
+- [ ] W4 — `automation_runs` (migration `004`), scheduled n8n memo, run history
