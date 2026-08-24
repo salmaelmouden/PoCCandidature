@@ -15,7 +15,11 @@ dependencies = [
   "pydantic-settings>=2.6.0",
   "alembic>=1.14.0",
   "httpx>=0.28.0",
-  "streamlit>=1.40.0",
+  # Floor set by the design system, not by the app logic: `st.navigation` with
+  # grouped pages, `width="stretch"`, and the `[theme.light]` / `[theme.dark]`
+  # config keys are all recent additions. This is the version the theme was
+  # validated against; an older resolve would render an unstyled dashboard.
+  "streamlit>=1.62.0",
   "pandas>=2.2.0",
   "fastapi>=0.115.0",
   "uvicorn[standard]>=0.32.0",

@@ -45,6 +45,13 @@ COPY alembic.ini ./
 COPY alembic ./alembic
 COPY scripts ./scripts
 
+# Streamlit reads `$CWD/.streamlit/config.toml`, and WORKDIR is where the start
+# command runs — so the theme has to be copied explicitly. This image copies
+# named paths rather than the whole context, which is why a new top-level
+# directory does not arrive on its own. Kept after `pip install .` so editing the
+# theme does not invalidate the dependency layer.
+COPY .streamlit ./.streamlit
+
 # Streamlit's usage telemetry is off by default here: this page is shared with
 # third parties and should phone home as little as possible.
 ENV STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
