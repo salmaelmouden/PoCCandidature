@@ -9,7 +9,7 @@ One repository, one image, several services that differ only by start command:
 |---|---|---|---|
 | **Postgres** | managed database plugin | — | no |
 | **dashboard** | the Streamlit app (default `CMD`) | `railway.json` | **yes — this is the link you share** |
-| **refresher** | `refresh_catalogue.py --loop` | — (start command only) | no |
+| **refresher** | `refresh_catalogue.py --loop` — without it the catalogue stays empty | `railway.refresher.json` | no |
 | **api** | FastAPI for n8n, optional | `railway.api.json` | only if n8n needs to reach it |
 
 Cost is roughly $5/month on the Hobby plan; the refresher is idle most of the time.
@@ -87,13 +87,21 @@ ends up listening somewhere the domain is not pointing.
 
 ## 3. Add the refresher service
 
+Without this service the catalogue is never populated, and **Catalogue public**
+has nothing to read.
+
 **New** → **GitHub Repo** → the same repository, then under **Settings**:
 
-- **Custom Start Command:**
-  ```
-  python scripts/refresh_catalogue.py --loop --interval-seconds 900
-  ```
-- **Networking:** no domain — it has no HTTP server.
+- **Config-as-code path:** `railway.refresher.json`. That file holds the start
+  command (`refresh_catalogue.py --loop --interval-seconds 900`). Set it here
+  rather than typing a **Custom Start Command** — a UI override is invisible from
+  the repo and takes precedence over it, which is how this project spent a
+  deploy running the wrong process on the wrong port.
+- **Networking:** no domain, and no `PORT` — it has no HTTP server. `PORT` matters
+  only for the dashboard and the API.
+
+It declares no healthcheck, on purpose: there is no endpoint to probe, and a
+healthcheck against a process that never listens fails the deploy.
 
 Give it the same variables as the dashboard — including its own
 `DATABASE_URL=${{Postgres.DATABASE_URL}}` reference, which is not inherited:
@@ -107,7 +115,21 @@ APP_ENV=production
 ```
 
 Do not let this service run migrations: the dashboard already does, and two
-concurrent `alembic upgrade` runs against one database can collide.
+concurrent `alembic upgrade` runs against one database can collide. That is why
+`railway.refresher.json` starts the script directly, with no `alembic upgrade
+head` in front of it.
+
+### Seeding it once, right now
+
+If you just want data in the page without waiting for a service, run a single
+cycle from the Railway shell on any service that has the variables:
+
+```
+python scripts/refresh_catalogue.py
+```
+
+With no `--loop` the script runs exactly one cycle and exits. That is enough to
+make **Catalogue public** render; the service above is what keeps it current.
 
 ### Why a loop rather than a cron
 
