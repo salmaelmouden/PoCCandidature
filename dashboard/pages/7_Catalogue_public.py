@@ -16,7 +16,7 @@ from app.services.public_signals import (
     build_public_signal_report,
     get_catalogue_freshness,
 )
-from app.skills.public_signal_analysis import PublicSignalReport
+from app.skills.public_signal_analysis import PublicSignalError, PublicSignalReport
 from dashboard.catalogue_view import (
     dumbbell,
     fr,
@@ -35,9 +35,22 @@ st.set_page_config(page_title="Catalogue public · Growth Intelligence AI", layo
 
 
 @st.cache_data(ttl=120, show_spinner="Lecture du catalogue…")
-def load() -> tuple[PublicSignalReport, CatalogueFreshness]:
+def load() -> tuple[PublicSignalReport | None, CatalogueFreshness]:
+    """Read the catalogue, tolerating one that has not been populated yet.
+
+    An empty catalogue is an ordinary state, not a fault: on a fresh deploy the
+    refresher has not run its first cycle. `analyse_public_signals` is right to
+    refuse to analyse nothing, so absorb that refusal here and return no report.
+
+    This page is public and unauthenticated, so an unhandled PublicSignalError
+    renders a stack trace — internal paths included — to anyone holding the link.
+    """
     with db_session() as session:
-        return build_public_signal_report(session), get_catalogue_freshness(session)
+        fresh = get_catalogue_freshness(session)
+        try:
+            return build_public_signal_report(session), fresh
+        except PublicSignalError:
+            return None, fresh
 
 
 # ---------------------------------------------------------------- page
@@ -55,11 +68,25 @@ with head_right:
 
 report, fresh = load()
 
-if fresh.classified == 0:
-    st.warning(
-        "Aucune vidéo classée. Lance `make ingest-youtube` puis `make classify` "
-        "pour alimenter cette page."
-    )
+# Two distinct empty states, and they need different remedies. Reporting the
+# wrong one sends the reader after a fix that changes nothing.
+if report is None or fresh.classified == 0:
+    if fresh.videos == 0:
+        st.warning(
+            "Catalogue vide — aucune vidéo n'a encore été ingérée.\n\n"
+            "- En local : `make ingest-youtube` puis `make classify`.\n"
+            "- En production : c'est le service *refresher* qui alimente cette "
+            "page (voir `docs/guides/deploy-railway.md` §3). Pour la remplir "
+            "immédiatement, un cycle unique suffit : "
+            "`python scripts/refresh_catalogue.py`."
+        )
+    else:
+        st.warning(
+            f"{fresh.videos} vidéos ingérées, mais aucune n'est encore classée.\n\n"
+            "- En local : `make classify`.\n"
+            "- En production : le *refresher* classe à chaque cycle ; si le "
+            "compte reste à zéro, vérifie `ANTHROPIC_API_KEY` sur ce service."
+        )
     st.stop()
 
 st.info(
