@@ -399,9 +399,15 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
       `failing` (it errored), `stale` (it succeeded, then silently stopped being
       invoked — the failure mode with no error message), `never`. Second n8n
       canvas on a Monday 07:00 schedule with a failure branch, since the endpoint
-      answers 500 rather than shipping a memo that failed a post-condition.
-      Dashboard page **Automatisation → Runs planifiés**; the verdict is computed
-      in the service, the page renders it
+      answers 500 rather than shipping a memo that failed a post-condition. In
+      production the schedule is a Railway cron service (`railway.memo.json`,
+      `0 7 * * 1`) — n8n runs on a laptop, so without it "weekly" would be true
+      locally and false on the deployed app. That container's filesystem is
+      discarded on exit, so the memo's markdown is stored **on the run** and read
+      back from there; an `artifact_path` pointing at a file that no longer exists
+      is worse than no path. Dashboard page **Automatisation → Runs planifiés**
+      shows the history and the last memo; the verdict is computed in the service,
+      the page renders it
 
 ### Phase 17
 

@@ -11,6 +11,7 @@ One repository, one image, several services that differ only by start command:
 | **dashboard** | the Streamlit app (default `CMD`) | `railway.json` | **yes — this is the link you share** |
 | **refresher** | cron, `*/10` — one `refresh_catalogue.py` cycle per run. Without it the catalogue stays empty | `railway.refresher.json` | no |
 | **api** | FastAPI for n8n, optional | `railway.api.json` | only if n8n needs to reach it |
+| **memo** | cron, Monday 07:00 UTC — one editorial memo per run. Without it the memo is only weekly on a laptop | `railway.memo.json` | no |
 | **seed** | one-shot, on demand — writes the synthetic funnel dataset | `railway.seed.json` | no |
 
 Cost is roughly $5/month on the Hobby plan. The refresher is a cron job, so it is
@@ -138,6 +139,44 @@ public** render; the cron service above is what keeps it current.
 Note the absence of `--respect-backoff` here. A manual seed should never be
 silently skipped because an earlier run failed, so the flag is opt-in and the
 cron service is the only thing that passes it.
+
+## 3b. Add the memo service
+
+Without this service the weekly editorial memo is a local `make memo-loop` and an
+n8n canvas that only runs on a laptop — the deployed app would record no runs and
+the **Automatisation** page would sit on "Jamais exécuté" forever.
+
+Create a second cron service from the same repo, config `railway.memo.json`:
+`cronSchedule` `0 7 * * 1` (Monday 07:00 UTC), one memo per run, `restartPolicyType`
+`NEVER`. It needs the same variable reference as the refresher, which is not
+inherited:
+
+```
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+```
+
+No `PORT` — it serves nothing and has no domain. Do not let it run migrations
+either; the dashboard already does.
+
+### The memo lives in the database, not in `reports/`
+
+The start command passes `--write`, but the file it writes is not the durable
+copy: a cron container's filesystem is discarded when it exits, so the path
+recorded on the run points at nothing within seconds. The markdown is therefore
+stored on the run itself, and the **Automatisation** page reads it back from
+there. `reports/` remains useful locally, where the file survives.
+
+### Running one now, without waiting for Monday
+
+From the Railway shell on any service that has the variables:
+
+```
+python scripts/generate_editorial_memo.py --write
+```
+
+One memo, one recorded run, then it exits. The two post-conditions run first: if
+either fails the process exits non-zero and the run is recorded as a failure with
+its reason, rather than a memo being written anyway.
 
 ### Why cron rather than a long-lived loop
 

@@ -110,7 +110,17 @@ def run_once(session_factory, *, write: bool, directory: Path | None) -> int:
     _record(
         ok=True,
         artifact_path=str(path) if path else None,
-        details={"sections": len(memo.sections), "figures": len(memo.figures)},
+        # The markdown is stored, not just the path. On Railway this runs as a
+        # cron container whose filesystem is discarded when it exits, so the file
+        # under reports/ is gone by the time anyone looks — an artifact_path
+        # pointing at nothing is worse than no path at all. The database is the
+        # only durable copy, and it is what the dashboard reads back.
+        details={
+            "sections": len(memo.sections),
+            "figures": len(memo.figures),
+            "title": memo.title,
+            "markdown": memo.markdown,
+        },
     )
 
     if path is not None:

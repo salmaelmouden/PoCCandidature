@@ -203,7 +203,14 @@ try:
         _record(
             ok=True,
             artifact_path=saved,
-            details={"sections": len(memo.sections), "figures": len(memo.figures)},
+            # Same reasoning as the CLI: `reports/` is container-local and does not
+            # outlive a redeploy, so the database holds the only durable copy.
+            details={
+                "sections": len(memo.sections),
+                "figures": len(memo.figures),
+                "title": memo.title,
+                "markdown": memo.markdown,
+            },
         )
 
         return EditorialMemoResponse(
