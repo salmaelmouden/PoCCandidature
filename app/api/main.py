@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import logging
 import sys
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 # Enable logging
 logging.basicConfig(
@@ -99,7 +99,7 @@ try:
 
         saved: str | None = None
         if save:
-            stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+            stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
             path = REPORTS_DIR / f"weekly_{stamp}.md"
             write_report_markdown(report, path)
             saved = str(path)
@@ -112,7 +112,7 @@ try:
             markdown=report.markdown,
             provenance_note=report.provenance_note,
             saved_path=saved,
-            generated_at=datetime.now(timezone.utc),
+            generated_at=datetime.now(UTC),
         )
 
     class EditorialMemoResponse(BaseModel):
@@ -138,6 +138,7 @@ try:
         would otherwise reach a scheduled delivery looking exactly like a sound
         one, which is the failure mode this whole track exists to prevent.
         """
+        from app.services.automation import MEMO_AUTOMATION, record_run
         from app.services.memo import build_editorial_memo, write_memo
         from app.skills.memo_generation import (
             MemoError,
@@ -146,10 +147,26 @@ try:
         )
 
         logger.info(f"Editorial memo requested: candidate_limit={candidate_limit}")
+        started_at = datetime.now(UTC)
+
+        def _record(**fields) -> None:
+            """Bookkeeping in its own transaction, and never fatal on its own."""
+            try:
+                with session_scope() as session:
+                    record_run(
+                        session,
+                        automation=MEMO_AUTOMATION,
+                        started_at=started_at,
+                        **fields,
+                    )
+            except Exception:  # pragma: no cover - must not mask the real outcome
+                logger.exception("memo_run_record_failed")
+
         try:
             with session_scope() as session:
                 memo = build_editorial_memo(session, candidate_limit=candidate_limit)
         except MemoError as error:
+            _record(ok=False, error=f"catalogue insuffisant : {error}")
             raise HTTPException(status_code=409, detail=str(error)) from error
 
         undeclared = undeclared_figures(memo)
@@ -157,6 +174,17 @@ try:
         if undeclared or leaks:
             logger.error(
                 "memo_rejected undeclared=%s leaks=%s", undeclared, leaks
+            )
+            _record(
+                ok=False,
+                error="post-conditions non satisfaites",
+                details={
+                    "undeclared_figures": list(undeclared),
+                    "funnel_vocabulary_leaks": [
+                        {"section": key, "term": term} for key, term in leaks
+                    ],
+                    "rejected": True,
+                },
             )
             raise HTTPException(
                 status_code=500,
@@ -172,6 +200,11 @@ try:
         saved: str | None = None
         if save:
             saved = str(write_memo(memo, directory=REPORTS_DIR))
+        _record(
+            ok=True,
+            artifact_path=saved,
+            details={"sections": len(memo.sections), "figures": len(memo.figures)},
+        )
 
         return EditorialMemoResponse(
             title=memo.title,
@@ -181,7 +214,7 @@ try:
             markdown=memo.markdown,
             provenance=memo.provenance,
             saved_path=saved,
-            generated_at=datetime.now(timezone.utc),
+            generated_at=datetime.now(UTC),
         )
 
 except ImportError as e:

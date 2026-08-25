@@ -53,6 +53,12 @@ NAVIGATION = {
         st.Page("views/analyst.py", title="Analyste", icon=":material/query_stats:"),
         st.Page("views/experiments.py", title="Expérimentations", icon=":material/science:"),
     ],
+    # Last, and its own group: this one is about the machinery rather than about
+    # the catalogue. It belongs on the page list all the same — an automation
+    # nobody can check is a claim, not a feature.
+    "Automatisation": [
+        st.Page("views/automatisation.py", title="Runs planifiés", icon=":material/schedule:"),
+    ],
 }
 
 st.navigation(NAVIGATION).run()

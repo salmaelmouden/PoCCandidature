@@ -20,7 +20,7 @@ Do not implement later phases until the current phase is approved.
 | 13 | Catalogue insights + demo surface | Done |
 | 14 | Catalogue refresh + Railway deploy | Done |
 | 15 | Dashboard design system (French UI, themed charts) | Done |
-| 16 | Trustworthy automation + "En bref" landing | W1–W3 done, W4 pending |
+| 16 | Trustworthy automation + "En bref" landing | Done |
 | 17 | Title rewrites — the editorial recommendation, delivered as titles | Done |
 
 ## Branching convention

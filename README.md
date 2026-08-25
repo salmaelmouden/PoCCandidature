@@ -68,7 +68,7 @@ decided in [`ADR-009`](docs/decisions/ADR-009-data-quality-gate.md).
 
 ## Current status
 
-**Phase 16** — trustworthy automation (W1–W3 shipped, W4 pending) and the
+**Phase 16** — trustworthy automation (W1–W4 shipped) and the
 **En bref** landing page: the three-minute reading of the real catalogue, every
 number derived from the same live report as the full analysis.
 
@@ -374,7 +374,20 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
       second snapshot, one-day resolution, no refresh run, and thin dimension rows
       each say so. `make memo` / `memo-write` / `memo-loop`,
       `POST /api/memo/editorial`, dated markdown under `reports/`
-- [ ] W4 — `automation_runs` (migration `005`), scheduled n8n memo, run history
+- [x] W4 — the automation made observable. `automation_runs` (migration `005`) +
+      `AutomationRunRepository`; every execution is recorded **including the ones
+      that produce nothing**, because writing nothing on failure makes a broken
+      job indistinguishable from one that was not due. The CLI and the endpoint
+      both record before they return, in their own transaction, so the record
+      survives whatever went wrong in the one building the memo.
+      `app/services/automation.py` separates *last run* from *last success* — the
+      Phase 14 distinction one level up — and names three states rather than one:
+      `failing` (it errored), `stale` (it succeeded, then silently stopped being
+      invoked — the failure mode with no error message), `never`. Second n8n
+      canvas on a Monday 07:00 schedule with a failure branch, since the endpoint
+      answers 500 rather than shipping a memo that failed a post-condition.
+      Dashboard page **Automatisation → Runs planifiés**; the verdict is computed
+      in the service, the page renders it
 
 ### Phase 17
 

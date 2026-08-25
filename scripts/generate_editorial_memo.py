@@ -24,6 +24,7 @@ from pathlib import Path
 from types import FrameType
 
 from app.db.session import create_db_engine, create_session_factory, session_scope
+from app.services.automation import MEMO_AUTOMATION, record_run
 from app.services.memo import build_editorial_memo, write_memo
 from app.skills.memo_generation import (
     EditorialMemo,
@@ -65,22 +66,54 @@ def verify(memo: EditorialMemo) -> list[str]:
 
 
 def run_once(session_factory, *, write: bool, directory: Path | None) -> int:
-    """Compose, verify, then emit. Returns a process exit code."""
+    """Compose, verify, then emit. Returns a process exit code.
+
+    Every outcome is recorded, including the ones that produce nothing. A cron
+    job that silently stops working leaves no trace otherwise, and "no memo
+    arrived" is indistinguishable from "no memo was due".
+    """
+    started_at = datetime.now(UTC)
+
+    def _record(**fields) -> None:
+        # Its own session: the run record has to survive whatever went wrong in
+        # the transaction that was building the memo.
+        try:
+            with session_scope(session_factory) as session:
+                record_run(session, automation=MEMO_AUTOMATION, started_at=started_at, **fields)
+        except Exception:  # pragma: no cover - bookkeeping must never mask the outcome
+            logger.exception("memo_run_record_failed")
+
     try:
         with session_scope(session_factory) as session:
             memo = build_editorial_memo(session)
     except MemoError as error:
         logger.error("memo_skipped reason=%s", error)
+        _record(ok=False, error=f"catalogue insuffisant : {error}")
         return 1
+    except Exception as error:
+        logger.exception("memo_failed")
+        _record(ok=False, error=f"{type(error).__name__}: {error}")
+        raise
 
     problems = verify(memo)
     if problems:
         for problem in problems:
             logger.error("memo_rejected %s", problem)
+        _record(
+            ok=False,
+            error="post-conditions non satisfaites : " + " ; ".join(problems),
+            details={"sections": len(memo.sections), "rejected": True},
+        )
         return 2
 
-    if write:
-        path = write_memo(memo, directory=directory)
+    path = write_memo(memo, directory=directory) if write else None
+    _record(
+        ok=True,
+        artifact_path=str(path) if path else None,
+        details={"sections": len(memo.sections), "figures": len(memo.figures)},
+    )
+
+    if path is not None:
         logger.info("memo_written path=%s sections=%s", path, len(memo.sections))
         print(path)
     else:
