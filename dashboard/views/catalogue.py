@@ -80,11 +80,33 @@ page_header(
     chips=tuple(chips),
 )
 
+# The button drops the 120-second read cache; it does not fetch from YouTube.
+# Labelled "Rafraîchir" it read as broken, because the honest outcome of a click
+# is usually an identical page: the catalogue only moves when the refresher
+# service runs, and `last_checked_at` comes from `ingest_runs`, which this button
+# never writes. So the label now says what it does, and the click is acknowledged
+# — an action with no visible effect and no feedback is indistinguishable from a
+# dead control.
 head_left, head_right = st.columns([4, 1])
 with head_right:
-    if st.button("Rafraîchir", width="stretch", icon=":material/refresh:"):
+    if st.button(
+        "Relire la base",
+        width="stretch",
+        icon=":material/refresh:",
+        help=(
+            "Vide le cache de lecture (2 minutes) et relit la base. Le catalogue "
+            "lui-même est mis à jour par le service d'ingestion, pas par ce "
+            "bouton : « Dernière vérification » ne bougera qu'après un cycle."
+        ),
+    ):
+        st.session_state["gia_catalogue_reread"] = True
         load.clear()
         st.rerun()
+
+# Set before the rerun and consumed after it, because `st.rerun` discards
+# everything already drawn — a toast emitted next to the button would never show.
+if st.session_state.pop("gia_catalogue_reread", False):
+    st.toast("Base relue.", icon=":material/refresh:")
 
 empty = empty_state_message(
     has_report=report is not None,
