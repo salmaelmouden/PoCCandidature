@@ -10,6 +10,14 @@
 
 ## Walkthrough
 
+### Track 0 — The landing page (30 seconds)
+
+0. **En bref** — http://localhost:8501  
+   Three readings of the real catalogue and the move each implies, plus the
+   guardrail story. Every number is derived from the same live report the full
+   catalogue page reads, so the summary cannot drift after an ingest. A visitor
+   who reads nothing else still leaves with a finding **and** its provenance.
+
 ### Track A — Synthetic funnel (decision support)
 
 1. **Synthèse** — http://localhost:8501  
