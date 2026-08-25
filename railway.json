@@ -4,8 +4,8 @@
     "builder": "DOCKERFILE"
   },
   "deploy": {
-    "healthcheckPath": "/health",
-    "healthcheckTimeout": 30
+    "healthcheckPath": "/_stcore/health",
+    "healthcheckTimeout": 300
   }
 }
 
