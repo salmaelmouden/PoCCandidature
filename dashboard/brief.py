@@ -17,7 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.skills.public_signal_analysis import DimensionStat, PublicSignalReport
-from dashboard.catalogue_view import pick, rank_of
+from dashboard.catalogue_view import label_of, pick, rank_of
 from dashboard.formatting import fmt_int, fmt_pct, fr
 
 
@@ -218,17 +218,89 @@ def _volume_finding(report: PublicSignalReport, index: str) -> Finding | None:
     )
 
 
+#: Topics whose questions only arise once there is capital to manage, and topics
+#: that address someone still forming habits. Declared here, and named in the
+#: rendered text, because the whole reading moves if a reader disagrees with the
+#: mapping — and a reader well might. Burying it in prose would hide the one
+#: assumption the conclusion rests on.
+_CAPITAL_TOPICS = ("fiscalite", "immobilier")
+_ENTRY_TOPICS = ("education_financiere", "epargne_placements")
+
+
+def _share_of(rows: list[DimensionStat], values: tuple[str, ...]) -> tuple[float, int]:
+    """Combined catalogue share and video count for the topics actually present."""
+    present = [row for row in rows if row.value in values]
+    return sum(row.share_of_catalogue for row in present), sum(row.videos for row in present)
+
+
+def _segment_finding(report: PublicSignalReport, index: str) -> Finding | None:
+    """Production mix against the business model — the acquisition engine's aim.
+
+    Deliberately a mix statement, not an audience one. Who watches a video is
+    not observable from outside the channel; what share of the catalogue treats
+    a given subject is. The inference from one to the other is the reader's, and
+    the text says so.
+    """
+    capital_share, capital_videos = _share_of(report.by_topic, _CAPITAL_TOPICS)
+    entry_share, entry_videos = _share_of(report.by_topic, _ENTRY_TOPICS)
+    if capital_videos == 0 or entry_videos == 0:
+        return None
+
+    capital_names = ", ".join(
+        label_of(row.value).lower() for row in report.by_topic if row.value in _CAPITAL_TOPICS
+    )
+    entry_names = ", ".join(
+        label_of(row.value).lower() for row in report.by_topic if row.value in _ENTRY_TOPICS
+    )
+    ratio = entry_share / capital_share if capital_share else 0.0
+
+    return Finding(
+        index=index,
+        title="Le catalogue et le haut de gamme ne se regardent pas",
+        body=(
+            f"Une offre réservée aux gros patrimoines a un présupposé : un capital "
+            f"déjà constitué. En classant les sujets selon qu'ils supposent ce "
+            f"capital ({capital_names}) ou qu'ils s'adressent à quelqu'un qui le "
+            f"constitue encore ({entry_names}), l'écart de production est net.\n\n"
+            f"Les sujets qui supposent un capital pèsent "
+            f"**{fmt_pct(capital_share, 1)}** du catalogue "
+            f"({fmt_int(capital_videos)} vidéos). Ceux d'entrée de gamme en pèsent "
+            f"**{fmt_pct(entry_share, 1)}** ({fmt_int(entry_videos)} vidéos), soit "
+            f"**{fr(ratio, 1)} fois plus**. Le moteur d'acquisition est pointé vers "
+            f"le haut du funnel, ce qui est cohérent pour un produit grand public — "
+            f"et l'est beaucoup moins si l'offre patrimoniale est une priorité de "
+            f"croissance.\n\n"
+            f"C'est un constat de **répartition éditoriale**, pas d'audience : qui "
+            f"regarde quoi n'est pas observable de l'extérieur. Le pont entre les "
+            f"deux appartient au lecteur, et il tient à la classification "
+            f"ci-dessus — la déplacer déplace le chiffre."
+        ),
+        action=(
+            "La question à poser en réunion éditoriale n'est pas « faut-il produire "
+            "plus de contenu patrimonial » mais « d'où viennent les leads qualifiés "
+            "aujourd'hui ». Si une poignée de vidéos les génère, leur sujet et leur "
+            "format sont un modèle réplicable et le mix actuel est un angle mort "
+            "chiffrable. Si les leads viennent d'ailleurs, le catalogue n'est pas le "
+            "levier et le sujet est clos. La donnée qui tranche est le taux de "
+            "qualification par vidéo d'origine — invisible d'ici, triviale en interne."
+        ),
+        badge="Hypothèse — dépend de la classification",
+        badge_kind="interpretation",
+    )
+
+
 def findings(report: PublicSignalReport) -> tuple[Finding, ...]:
     """The readings worth three minutes, in the order they should be read.
 
-    The two zero-cost editorial moves come first and the strategic question last,
-    because the last one ends on what public data cannot answer — which is the
-    note the page should close on, not open with.
+    The two zero-cost editorial moves come first and the two strategic questions
+    last, because both end on what public data cannot answer — which is the note
+    the page should close on, not open with. Within that, production mix comes
+    after volume: the second reads as a consequence of the first.
 
     Indices are assigned after the drops, so a missing finding leaves 01/02
     rather than a gap at 02.
     """
-    builders = (_hook_finding, _narrative_finding, _volume_finding)
+    builders = (_hook_finding, _narrative_finding, _volume_finding, _segment_finding)
     built: list[Finding] = []
     for builder in builders:
         found = builder(report, f"{len(built) + 1:02d}")

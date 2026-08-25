@@ -49,7 +49,10 @@ def report(**overrides) -> PublicSignalReport:
         ],
         "by_topic": [
             stat("epargne_placements", videos=180, reach=0.82, share=0.19),
+            stat("education_financiere", videos=140, reach=0.95, share=0.15),
             stat("portrait_histoire", videos=90, reach=1.20, share=0.09),
+            stat("immobilier", videos=70, reach=0.98, share=0.074),
+            stat("fiscalite", videos=45, reach=1.05, share=0.047),
         ],
         "by_hook": [
             stat("question", videos=300, reach=0.95, share=0.315),
@@ -114,19 +117,20 @@ def test_headlines_survive_a_report_with_no_format_split() -> None:
 # ---- findings ---------------------------------------------------------------
 
 
-def test_all_three_findings_are_built_when_the_report_is_complete() -> None:
+def test_every_finding_is_built_when_the_report_is_complete() -> None:
     built = findings(report())
 
-    assert [finding.index for finding in built] == ["01", "02", "03"]
+    assert [finding.index for finding in built] == ["01", "02", "03", "04"]
     assert [finding.title for finding in built] == [
         "Le format décide de l'accroche, pas l'inverse",
         "Le récit a besoin de durée",
         "Le plus gros pari éditorial est le moins diffusé",
+        "Le catalogue et le haut de gamme ne se regardent pas",
     ]
 
 
 def test_numbers_come_from_the_report() -> None:
-    hook, narrative, volume = findings(report())
+    hook, narrative, volume, _ = findings(report())
 
     assert "1,38" in hook.body  # autorité, format long
     assert "1,30" in hook.body  # contre-pied, Short
@@ -136,7 +140,7 @@ def test_numbers_come_from_the_report() -> None:
 
 
 def test_ranks_are_read_from_the_list_that_holds_the_value() -> None:
-    hook, narrative, _ = findings(report())
+    hook, narrative, _, _ = findings(report())
 
     # autorité leads by_hook_long, portrait_histoire leads by_topic_long.
     assert "rang 1 sur 3" in hook.body
@@ -148,7 +152,7 @@ def test_a_finding_whose_inputs_are_missing_is_dropped_not_half_rendered() -> No
     without_hooks = report(by_hook_short=[], by_hook_long=[], by_hook=[])
     built = findings(without_hooks)
 
-    assert len(built) == 2
+    assert len(built) == 3
     assert all("accroche" not in finding.title for finding in built)
 
 
@@ -165,7 +169,8 @@ def test_indices_are_assigned_after_the_drops() -> None:
         )
     )
 
-    assert [finding.index for finding in built] == ["01", "02"]
+    assert [finding.index for finding in built] == ["01", "02", "03"]
+    assert all("récit" not in finding.title for finding in built)
     assert built[1].title == "Le plus gros pari éditorial est le moins diffusé"
 
 
@@ -183,12 +188,55 @@ def test_the_unanswerable_finding_is_marked_as_such() -> None:
     the same confidence as the two measured findings is the failure the long
     form spends a whole section avoiding.
     """
-    hook, narrative, volume = findings(report())
+    hook, narrative, volume, segment = findings(report())
 
     assert hook.badge_kind == "fact"
     assert narrative.badge_kind == "fact"
     assert volume.badge_kind == "warning"
     assert "en interne" in volume.action
+    # The mix is measured; the inference to an audience is not. Its badge has to
+    # say so, because it is the one finding a reader could over-read.
+    assert segment.badge_kind == "interpretation"
+
+
+def test_segment_finding_states_both_shares_and_the_ratio() -> None:
+    segment = findings(report())[3]
+
+    # fiscalité 4,7 % + immobilier 7,4 % against épargne 19 % + éducation 15 %.
+    assert f"12,1{NBSP}%" in segment.body
+    assert f"34,0{NBSP}%" in segment.body
+    assert "2,8 fois plus" in segment.body
+    assert "115" in segment.body and "320" in segment.body
+
+
+def test_segment_finding_names_the_classification_it_rests_on() -> None:
+    """The mapping is the assumption; hiding it would make the number unarguable."""
+    segment = findings(report())[3]
+
+    for label in ("fiscalité", "immobilier", "éducation financière", "épargne"):
+        assert label in segment.body.lower()
+    assert "déplacer déplace le chiffre" in segment.body
+
+
+def test_segment_finding_is_dropped_when_one_side_is_absent() -> None:
+    """A share computed against nothing is not a smaller claim — it is a wrong one."""
+    entry_only = report(
+        by_topic=[
+            stat("epargne_placements", videos=180, reach=0.82, share=0.19),
+            stat("education_financiere", videos=140, reach=0.95, share=0.15),
+        ]
+    )
+    titles = [finding.title for finding in findings(entry_only)]
+
+    assert "Le catalogue et le haut de gamme ne se regardent pas" not in titles
+
+
+def test_segment_finding_claims_a_mix_not_an_audience() -> None:
+    """Who watches is not observable from outside the channel; the text must not pretend."""
+    segment = findings(report())[3]
+
+    assert "pas d'audience" in segment.body
+    assert "n'est pas observable" in segment.body
 
 
 def test_findings_never_claim_a_signup_number() -> None:
