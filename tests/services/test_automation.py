@@ -142,6 +142,34 @@ def test_a_successful_run_keeps_where_the_artifact_landed(session):
     assert run.details["sections"] == 6
 
 
+def test_the_last_memo_is_readable_from_the_run_not_from_disk(session):
+    """Production runs are cron containers; `reports/` is gone when they exit."""
+    add(
+        session,
+        ok=True,
+        ago=timedelta(minutes=5),
+        artifact_path="reports/memo_editorial_20260825T124513Z.md",
+        details={"markdown": "# Mémo éditorial\n\nDu contenu.", "sections": 6},
+    )
+
+    assert get_automation_health(session).last_artifact.startswith("# Mémo éditorial")
+
+
+def test_a_failed_run_never_supplies_the_last_memo(session):
+    add(session, ok=True, ago=timedelta(days=8), details={"markdown": "# Ancien"})
+    add(session, ok=False, ago=timedelta(days=1), error="boom", details={"markdown": "# Rejeté"})
+    health = get_automation_health(session)
+
+    assert health.status == "failing"
+    assert health.last_artifact == "# Ancien"
+
+
+def test_a_run_without_stored_markdown_reports_nothing_rather_than_empty(session):
+    add(session, ok=True, ago=timedelta(minutes=5), details={"sections": 6})
+
+    assert get_automation_health(session).last_artifact is None
+
+
 def test_runs_of_other_automations_are_not_mixed_in(session):
     add(session, ok=True, ago=timedelta(hours=2))
     record_run(

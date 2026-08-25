@@ -97,7 +97,21 @@ elif health.status == "never":
 
 # ---- l'historique ----------------------------------------------------------
 
-section("Les derniers runs", index="01")
+section("Le dernier mémo produit", index="01")
+
+memo_markdown = health.last_artifact
+if memo_markdown is None:
+    st.caption(
+        "Aucun mémo conservé pour l'instant. Le contenu est stocké avec le run "
+        "à partir du moment où il en existe un : en production ce job est un "
+        "conteneur cron dont le système de fichiers disparaît à la sortie, donc "
+        "le fichier sous `reports/` n'existe plus quand on ouvre cette page."
+    )
+else:
+    with st.expander("Lire le mémo du dernier run réussi", expanded=False):
+        st.markdown(memo_markdown)
+
+section("Les derniers runs", index="02")
 
 if not health.runs:
     st.caption("Rien à afficher tant qu'aucun run n'a été enregistré.")
@@ -111,7 +125,7 @@ else:
 
 # ---- ce que le mémo garantit -----------------------------------------------
 
-section("Ce qu'un run réussi garantit", index="02")
+section("Ce qu'un run réussi garantit", index="03")
 st.markdown(
     """
 Un run n'est marqué **OK** que si le mémo a passé ses deux post-conditions, qui

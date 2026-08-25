@@ -75,6 +75,21 @@ class AutomationHealth:
             return None
         return sum(1 for run in self.runs if run.ok) / len(self.runs)
 
+    @property
+    def last_artifact(self) -> str | None:
+        """The markdown of the last successful run, when it was kept.
+
+        Read from the run record rather than from `artifact_path`: in production
+        this job is a cron container whose filesystem is discarded on exit, so
+        the file the path names is gone by the time anyone opens the page. Runs
+        written before the markdown was stored return `None` and the page says
+        so instead of rendering an empty document.
+        """
+        if self.last_success is None:
+            return None
+        markdown = self.last_success.details.get("markdown")
+        return markdown if isinstance(markdown, str) and markdown.strip() else None
+
 
 def _aware(moment: datetime) -> datetime:
     """Guarantee an aware UTC datetime.
