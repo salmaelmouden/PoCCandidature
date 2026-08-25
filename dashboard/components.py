@@ -193,6 +193,41 @@ def insight_card(
     )
 
 
+def rewrite_card(
+    *,
+    original: str,
+    proposal: str,
+    meta: str,
+    register: str,
+    url: str,
+) -> str:
+    """Before/after for one title.
+
+    Built as markup rather than passed to ``st.markdown`` as text for one
+    reason: these strings are video titles straight out of the catalogue, full
+    of ``|``, ``*``, ``#`` and emoji. Rendered as markdown they would silently
+    reformat — the ``#`` in "Finary Talk #20" is one paste away from becoming a
+    heading — and a page arguing about titles cannot afford to misquote one.
+    """
+    return (
+        '<div class="gia-card">'
+        f'<div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:.6rem">'
+        f"{badge(register, 'recommendation')}"
+        f'<span style="font-size:.74rem;color:var(--gia-ink-soft)">{escape(meta)}</span>'
+        "</div>"
+        f'<div style="font-size:.72rem;font-weight:600;letter-spacing:.04em;'
+        f'text-transform:uppercase;color:var(--gia-ink-soft)">Actuel</div>'
+        f'<a href="{escape(url, quote=True)}" target="_blank" rel="noopener noreferrer" '
+        f'style="display:block;font-size:.95rem;color:var(--gia-ink-soft);'
+        f'text-decoration:none;margin:.15rem 0 .8rem">{escape(original)}</a>'
+        f'<div style="font-size:.72rem;font-weight:600;letter-spacing:.04em;'
+        f'text-transform:uppercase;color:var(--gia-ink-soft)">Proposé</div>'
+        f'<div style="font-size:1.05rem;font-weight:600;letter-spacing:-.015em;'
+        f'color:var(--gia-ink);margin-top:.15rem">{escape(proposal)}</div>'
+        "</div>"
+    )
+
+
 def provenance_message(*, has_synthetic: bool, labels: Iterable[str]) -> str:
     """The sentence under the hero that says where the numbers come from."""
     names = sorted(labels)

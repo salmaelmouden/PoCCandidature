@@ -361,3 +361,31 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
       sits under a group that says so before a reader clicks it
 - [ ] W3 — `memo_generation`: weekly French editorial memo over the real catalogue
 - [ ] W4 — `automation_runs` (migration `004`), scheduled n8n memo, run history
+
+### Phase 17
+
+The analysis said an opening register underperforms. That is not what gets acted
+on in an editorial meeting — titles are. This phase closes the last gap between a
+finding and a decision, under constraints that keep it honest.
+
+- [x] **Dix titres** page (`dashboard/views/titres.py`) — ten rewrite proposals for
+      real long-form videos, each beside the original and its live reach index
+- [x] `build_title_evidence` — the candidate list is a **query**, never a curated
+      list: long form ≥ 8 min, `question` hook, reach index below its own cohort
+      median, worst first. A video that climbs out of the bottom leaves the page,
+      and its rewrite goes with it
+- [x] Two hook rankings carried side by side because they **disagree** — `autorite`
+      leads all long-form video and is not even reportable inside the recurring
+      patrimoine series, where `chiffre` wins. A rule drawn from the global ranking
+      alone would be applied backwards exactly where it is applied most
+- [x] `gap_sentence` picks the best register clearing `THIN_THRESHOLD`, not the top
+      row — the real series ranking is led by an 8-video median that must not drive
+      a publishing calendar
+- [x] Two natural experiments surfaced from the catalogue itself — same guest and
+      same subject, or same subject four months apart — cited with **live** indices
+      and dropped rather than restated if the cited video leaves the indexed set
+- [x] Writing constraints, stated on the page: no invented figures (euro amounts
+      appear as `[slots]` for whoever watched the video) and no asserted verdicts
+      about a real person's finances
+- [x] `tests/dashboard/test_rewrites.py` — id-keyed pairing, thin-leader skipping,
+      precedent resolution, and graceful degradation to fewer cards, never blank ones
