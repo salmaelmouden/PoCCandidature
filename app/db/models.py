@@ -2,7 +2,7 @@
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any
 from uuid import uuid4
 
 from sqlalchemy import (
@@ -101,7 +101,44 @@ class IngestRun(Base):
     metrics_upserted: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     classified: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     ok: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    error: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    error: Mapped[str | None] = mapped_column(String(512), nullable=True)
+
+
+class AutomationRun(Base):
+    """
+    One execution of a scheduled job — the memo, and whatever follows it.
+
+    Separate from `ingest_runs` on purpose. That table answers "is the data
+    current"; this one answers "is the machinery still running", and the two fail
+    independently: a refresher that keeps working while the Monday memo has been
+    failing for three weeks looks perfectly healthy through `ingest_runs` alone.
+
+    Failure is a state here, not an absence. A run that failed is written with
+    `ok=False` and its reason, because the alternative — writing nothing — makes a
+    broken automation indistinguishable from one that has not been due yet.
+    """
+
+    __tablename__ = "automation_runs"
+    __table_args__ = (Index("ix_automation_runs_name_finished", "automation", "finished_at"),)
+
+    id: Mapped[Any] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    #: Which job. Free text rather than an enum: a new automation should be
+    #: recordable without a migration, and this column is never branched on.
+    automation: Mapped[str] = mapped_column(String(64), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    finished_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    ok: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    #: Why it failed, in one line. `None` on success.
+    error: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    #: Where the artefact landed, when the run produced one.
+    artifact_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    #: Anything worth keeping that is not worth a column — post-condition
+    #: verdicts, section counts. Read for display, never branched on.
+    details: Mapped[dict] = mapped_column(
+        JSON().with_variant(JSONB(), "postgresql"), nullable=False, default=dict
+    )
 
 
 class VideoClassification(Base):
@@ -155,7 +192,7 @@ class Acquisition(Base):
     metric_date: Mapped[date] = mapped_column(Date, nullable=False)
     channel: Mapped[str] = mapped_column(String(64), nullable=False)
     topic: Mapped[str] = mapped_column(String(64), nullable=False)
-    video_id: Mapped[Optional[Any]] = mapped_column(
+    video_id: Mapped[Any | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("videos.id", ondelete="SET NULL"), nullable=True
     )
     views: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -169,7 +206,7 @@ class Acquisition(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    video: Mapped[Optional[Video]] = relationship(back_populates="acquisitions")
+    video: Mapped[Video | None] = relationship(back_populates="acquisitions")
 
 
 class User(Base):
@@ -182,13 +219,13 @@ class User(Base):
     id: Mapped[Any] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     user_key: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     signed_up_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    activated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    became_premium_at: Mapped[Optional[datetime]] = mapped_column(
+    activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    became_premium_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     channel: Mapped[str] = mapped_column(String(64), nullable=False)
     topic: Mapped[str] = mapped_column(String(64), nullable=False)
-    source_video_id: Mapped[Optional[Any]] = mapped_column(
+    source_video_id: Mapped[Any | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("videos.id", ondelete="SET NULL"), nullable=True
     )
     is_synthetic: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
@@ -207,8 +244,8 @@ class Experiment(Base):
     hypothesis: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="draft")
     primary_metric: Mapped[str] = mapped_column(String(128), nullable=False)
-    start_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
-    end_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     is_synthetic: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     dataset_label: Mapped[str] = mapped_column(String(64), nullable=False, default="synthetic_v1")
     created_at: Mapped[datetime] = mapped_column(

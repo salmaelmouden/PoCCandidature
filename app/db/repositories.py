@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Sequence
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -13,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.db.models import (
     Acquisition,
     AnalyticsSnapshot,
+    AutomationRun,
     Experiment,
     ExperimentResult,
     IngestRun,
@@ -136,6 +138,74 @@ class IngestRunRepository:
         last_ok = self.latest(only_successful=True)
         if last_ok is not None:
             statement = statement.where(IngestRun.finished_at > last_ok.finished_at)
+        return int(self._session.scalar(statement) or 0)
+
+
+class AutomationRunRepository:
+    """Run history for scheduled jobs. Failures are rows, never absences."""
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def record(
+        self,
+        *,
+        automation: str,
+        started_at: datetime,
+        ok: bool,
+        error: str | None = None,
+        artifact_path: str | None = None,
+        details: dict[str, Any] | None = None,
+    ) -> AutomationRun:
+        row = AutomationRun(
+            automation=automation,
+            started_at=started_at,
+            ok=ok,
+            error=(error or None) and error[:512],
+            artifact_path=(artifact_path or None) and artifact_path[:512],
+            details=details or {},
+        )
+        self._session.add(row)
+        self._session.flush()
+        return row
+
+    def latest(self, automation: str, *, only_successful: bool = False) -> AutomationRun | None:
+        """The most recent run, or the most recent one that worked.
+
+        Both are needed at once by every caller worth having: showing only the
+        last run hides that it failed after weeks of success, and showing only
+        the last success hides that it has been failing since.
+        """
+        statement = (
+            select(AutomationRun)
+            .where(AutomationRun.automation == automation)
+            .order_by(AutomationRun.finished_at.desc())
+            .limit(1)
+        )
+        if only_successful:
+            statement = statement.where(AutomationRun.ok.is_(True))
+        return self._session.scalar(statement)
+
+    def recent(self, automation: str, *, limit: int = 10) -> list[AutomationRun]:
+        return list(
+            self._session.scalars(
+                select(AutomationRun)
+                .where(AutomationRun.automation == automation)
+                .order_by(AutomationRun.finished_at.desc())
+                .limit(limit)
+            )
+        )
+
+    def consecutive_failures(self, automation: str) -> int:
+        """Failures since the last success — the number that says "go look"."""
+        statement = (
+            select(func.count())
+            .select_from(AutomationRun)
+            .where(AutomationRun.automation == automation, AutomationRun.ok.is_(False))
+        )
+        last_ok = self.latest(automation, only_successful=True)
+        if last_ok is not None:
+            statement = statement.where(AutomationRun.finished_at > last_ok.finished_at)
         return int(self._session.scalar(statement) or 0)
 
 

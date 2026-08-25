@@ -57,9 +57,20 @@ def _title(text: str, tokens: Tokens) -> alt.TitleParams:
 
 
 def finalize(chart, tokens: Tokens, *, title: str, height: int):
-    """Shared chrome: recessive hairline axes, no view border, brand typeface."""
+    """Shared chrome: recessive hairline axes, no view border, brand typeface.
+
+    ``background`` is a top-level chart property here, not a ``configure`` call.
+    Altair's ``configure(**kwargs)`` *replaces* the config object rather than
+    merging into it, so a trailing ``.configure(background=...)`` silently threw
+    away every axis, legend and view setting made just above it — the whole of
+    the chart design system, dropped on the last line of the builder.
+    """
     return (
-        chart.properties(height=height, title=_title(title, tokens))
+        chart.properties(
+            height=height,
+            title=_title(title, tokens),
+            background="transparent",
+        )
         .configure_view(strokeWidth=0, fill=None)
         .configure_axis(
             labelFont=FONT,
@@ -86,7 +97,6 @@ def finalize(chart, tokens: Tokens, *, title: str, height: int):
             symbolSize=90,
             offset=8,
         )
-        .configure(background="transparent")
     )
 
 

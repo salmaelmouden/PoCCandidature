@@ -13,6 +13,7 @@ from __future__ import annotations
 import altair as alt
 import pandas as pd
 
+from app.skills.content_classification import HOOK_FR, TOPIC_FR, label_fr  # noqa: F401
 from app.skills.public_signal_analysis import DimensionStat
 from dashboard.charts import FONT, finalize
 from dashboard.formatting import fr, humanize_age  # noqa: F401  (re-exported)
@@ -22,37 +23,15 @@ SHORT = "Shorts"
 LONG = "Format long"
 THIN_THRESHOLD = 10
 
-TOPIC_FR = {
-    "etf_gestion_passive": "ETF / gestion passive",
-    "bourse_actions": "Bourse & actions",
-    "education_financiere": "Éducation financière",
-    "retraite": "Retraite",
-    "immobilier": "Immobilier",
-    "interview": "Interview",
-    "macro_actualite": "Macro & actualité",
-    "portrait_histoire": "Portrait & récit",
-    "crypto": "Crypto",
-    "fiscalite": "Fiscalité",
-    "epargne_placements": "Épargne & placements",
-    "produit_finary": "Produit",
-    "entrepreneuriat": "Entrepreneuriat",
-}
-
-HOOK_FR = {
-    "autorite": "Autorité",
-    "promesse": "Promesse",
-    "curiosite": "Curiosité",
-    "question": "Question",
-    "chiffre": "Chiffre",
-    "recit": "Récit",
-    "contrarian": "Contre-pied",
-    "actualite": "Actualité",
-}
-
 
 def label_of(value: str) -> str:
-    """French label, falling back to the raw key so a new enum value still renders."""
-    return TOPIC_FR.get(value, HOOK_FR.get(value, value))
+    """French label for a topic or hook.
+
+    Thin alias over the classifier's own mapping. The labels used to live here,
+    which meant the dashboard and the weekly memo each carried a copy and could
+    disagree about what the same classifier said.
+    """
+    return label_fr(value)
 
 
 def pick(rows: list[DimensionStat], value: str) -> DimensionStat | None:

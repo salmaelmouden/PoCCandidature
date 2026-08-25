@@ -8,5 +8,6 @@
 | `youtube_ingestion` | Phase 3 |
 | `experiment_analysis` | Phase 7 |
 | `report_generation` | Phase 9 |
+| `cta_analysis` | Phase 18 |
 
 Skills are deterministic Python modules with Pydantic schemas (except I/O-bound ingestion). They do not access Streamlit or call LLMs for calculations.

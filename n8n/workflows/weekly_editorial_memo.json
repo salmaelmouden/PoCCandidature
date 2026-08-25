@@ -1,0 +1,214 @@
+{
+  "name": "Weekly Editorial Memo",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Mémo éditorial hebdomadaire\n\n**Catalogue réel — données publiques**\n\n1. Trigger (manuel ou lundi 07:00)\n2. POST `gia-api` → /api/memo/editorial\n3. Un run est enregistré **dans les deux cas**\n\nL'API refuse d'émettre un mémo qui échoue à ses post-conditions : elle renvoie 500 et enregistre l'échec. Le `continueOnFail` du noeud HTTP existe pour que ce 500 arrive jusqu'à la branche d'échec au lieu de tuer le workflow.\n\nHistorique : dashboard → Automatisation",
+        "height": 420,
+        "width": 360,
+        "color": 5
+      },
+      "id": "sticky-overview",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-260, 100]
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [160, 200]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [1],
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Every Monday 07:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [160, 420]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://gia-api:8000/api/memo/editorial",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "save", "value": "true" },
+            { "name": "candidate_limit", "value": "5" }
+          ]
+        },
+        "options": {
+          "timeout": 120000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "http-editorial-memo",
+      "name": "Compose Editorial Memo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "status-ok",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 200,
+              "operator": { "type": "number", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-emitted",
+      "name": "Memo emitted?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [740, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $json.body.title }}",
+              "type": "string"
+            },
+            {
+              "id": "generated_on",
+              "name": "generated_on",
+              "value": "={{ $json.body.generated_on }}",
+              "type": "string"
+            },
+            {
+              "id": "saved_path",
+              "name": "saved_path",
+              "value": "={{ $json.body.saved_path }}",
+              "type": "string"
+            },
+            {
+              "id": "markdown",
+              "name": "markdown",
+              "value": "={{ $json.body.markdown }}",
+              "type": "string"
+            },
+            {
+              "id": "provenance",
+              "name": "provenance",
+              "value": "={{ $json.body.provenance }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format-memo",
+      "name": "Format Memo Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1000, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "status",
+              "name": "status_code",
+              "value": "={{ $json.statusCode }}",
+              "type": "number"
+            },
+            {
+              "id": "reason",
+              "name": "reason",
+              "value": "={{ $json.body.detail.message || $json.body.detail }}",
+              "type": "string"
+            },
+            {
+              "id": "undeclared",
+              "name": "undeclared_figures",
+              "value": "={{ JSON.stringify($json.body.detail.undeclared_figures || []) }}",
+              "type": "string"
+            },
+            {
+              "id": "leaks",
+              "name": "funnel_vocabulary_leaks",
+              "value": "={{ JSON.stringify($json.body.detail.funnel_vocabulary_leaks || []) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format-failure",
+      "name": "Explain Rejection",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1000, 440]
+    },
+    {
+      "parameters": {
+        "content": "### Branche d'échec\n\n409 = catalogue insuffisant.\n500 = post-conditions non satisfaites (chiffre non déclaré, ou vocabulaire d'entonnoir hors de la section « limites »).\n\nDans les deux cas le run est **déjà enregistré** côté API : cette branche sert à le voir ici, pas à le journaliser.\n\nÀ brancher sur Slack/e-mail selon la destination réelle.",
+        "height": 300,
+        "width": 320,
+        "color": 3
+      },
+      "id": "sticky-failure",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1300, 400]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Compose Editorial Memo", "type": "main", "index": 0 }]]
+    },
+    "Every Monday 07:00": {
+      "main": [[{ "node": "Compose Editorial Memo", "type": "main", "index": 0 }]]
+    },
+    "Compose Editorial Memo": {
+      "main": [[{ "node": "Memo emitted?", "type": "main", "index": 0 }]]
+    },
+    "Memo emitted?": {
+      "main": [
+        [{ "node": "Format Memo Fields", "type": "main", "index": 0 }],
+        [{ "node": "Explain Rejection", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": []
+}

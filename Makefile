@@ -27,6 +27,10 @@ help:
 	@echo "  make up-n8n      - core + n8n visual UI (:5678)"
 	@echo "  make n8n-import  - import weekly workflow into running n8n"
 	@echo "  make report      - CLI weekly markdown report"
+	@echo "  make cta-report  - where the funnel's entry point sits in the descriptions"
+	@echo "  make memo        - weekly French editorial memo (real catalogue), to stdout"
+	@echo "  make memo-write  - same, dated markdown under reports/"
+	@echo "  make memo-loop   - keep composing it weekly (long-lived container)"
 	@echo "  make eval        - agent evaluation suite (Phase 10)"
 	@echo "  make test        - full pytest"
 	@echo ""
@@ -121,6 +125,9 @@ classify:
 public-report:
 	$(PYTHON) scripts/public_signal_report.py
 
+cta-report:
+	$(PYTHON) scripts/cta_report.py
+
 refresh:
 	$(PYTHON) scripts/refresh_catalogue.py
 
@@ -135,6 +142,15 @@ api:
 
 report:
 	$(PYTHON) scripts/generate_weekly_report.py --days 7
+
+memo:
+	$(PYTHON) scripts/generate_editorial_memo.py
+
+memo-write:
+	$(PYTHON) scripts/generate_editorial_memo.py --write
+
+memo-loop:
+	$(PYTHON) scripts/generate_editorial_memo.py --loop --write
 
 n8n-import:
 	docker compose --profile n8n exec -u node -w /opt/n8n n8n \
