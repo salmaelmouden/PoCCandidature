@@ -41,6 +41,7 @@ NAVIGATION = {
         ),
         st.Page("views/catalogue.py", title="Catalogue public", icon=":material/public:"),
         st.Page("views/titres.py", title="Dix titres", icon=":material/edit_note:"),
+        st.Page("views/liens.py", title="La porte d'entrée", icon=":material/link:"),
     ],
     "Démo — funnel synthétique": [
         st.Page("views/overview.py", title="Synthèse", icon=":material/space_dashboard:"),

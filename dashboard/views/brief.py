@@ -15,32 +15,40 @@ import streamlit as st
 
 from app.services.public_signals import (
     CatalogueFreshness,
+    build_cta_report,
     build_public_signal_report,
     get_catalogue_freshness,
 )
+from app.skills.cta_analysis import CtaReport
 from app.skills.public_signal_analysis import PublicSignalError, PublicSignalReport
 from dashboard import components
 from dashboard.brief import findings, headlines
 from dashboard.catalogue_view import empty_state_message, humanize_age
+from dashboard.cta_view import teaser_sentence
 from dashboard.db import db_session
 from dashboard.ui import fmt_int, page_header, section
 
 
 @st.cache_data(ttl=120, show_spinner="Lecture du catalogue…")
-def load() -> tuple[PublicSignalReport | None, CatalogueFreshness]:
+def load() -> tuple[PublicSignalReport | None, CatalogueFreshness, CtaReport | None]:
     """Read the catalogue, tolerating one that has not been populated yet.
 
     Same contract as the catalogue page: an empty catalogue is an ordinary state
     on a fresh deploy, and this page is public and unauthenticated, so an
     unhandled `PublicSignalError` would render internal paths to anyone holding
     the link.
+
+    The CTA report rides along in the same session rather than in a second cached
+    loader: it reads the same rows, and two loaders would let the landing page
+    show two different vintages of the same catalogue.
     """
     with db_session() as session:
         fresh = get_catalogue_freshness(session)
+        cta = build_cta_report(session)
         try:
-            return build_public_signal_report(session), fresh
+            return build_public_signal_report(session), fresh, cta
         except PublicSignalError:
-            return None, fresh
+            return None, fresh, cta
 
 
 def _age(moment) -> str:
@@ -49,7 +57,7 @@ def _age(moment) -> str:
     return humanize_age((datetime.now(UTC) - moment.astimezone(UTC)).total_seconds())
 
 
-report, fresh = load()
+report, fresh, cta = load()
 
 chips = [(f"{fmt_int(fresh.videos)} vidéos", False)]
 if report is not None:
@@ -120,6 +128,32 @@ else:
         "views/catalogue.py",
         label="Catalogue public — la lecture détaillée",
         icon=":material/public:",
+    )
+
+# ---- la porte d'entrée ------------------------------------------------------
+
+# Deliberately outside the `else`: this reading needs no classifier, so it can
+# still be shown on a catalogue that has been ingested but not yet labelled —
+# the exact state in which the block above has nothing to say.
+teaser = teaser_sentence(cta) if cta is not None else None
+if teaser is not None:
+    section("Et une lecture qui ne parle pas d'éditorial")
+    st.markdown(
+        f"""
+Tout ce qui précède porte sur ce qui fait circuler une vidéo. La question
+suivante porte sur ce qui se passe ensuite : une vidéo qui a marché propose-t-elle
+seulement une porte d'entrée ?
+
+{teaser}
+
+C'est un constat d'**emplacement**, pas de conversion : la description est la
+seule partie du chemin d'acquisition qu'une chaîne publie.
+"""
+    )
+    st.page_link(
+        "views/liens.py",
+        label="La porte d'entrée — où se trouve le lien produit",
+        icon=":material/link:",
     )
 
 # ---- la limite --------------------------------------------------------------

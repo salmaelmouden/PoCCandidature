@@ -39,6 +39,18 @@ quietly wrong.
 Three of the four name a metric only internal data can supply. None infers signups or
 conversion from public signals, because neither is observable from outside a channel.
 
+### And one reading that is not about the editorial line
+
+The four above ask what makes a video circulate. A fifth asks what happens next: does a
+video that worked offer a way in at all? The description is the only part of the
+acquisition path a channel publishes, so three questions can be answered from outside —
+whether a link to the product exists, whether it sits above the fold, and whether it
+carries anything an analytics tool could attribute a signup to. A **placement** claim in
+all three cases. It can say *"no door here"*; it can never say *"nobody came in"*.
+
+It is also the one reading that needs no classifier, so it covers the whole ingested
+catalogue rather than the labelled subset the reach index is restricted to.
+
 ## The bug that shaped the design
 
 An `int()` truncation in the synthetic generator floored the funnel's terminal stage to
@@ -60,17 +72,18 @@ decided in [`ADR-009`](docs/decisions/ADR-009-data-quality-gate.md).
 |---|---|
 | The findings | Live app → **En bref** |
 | The full argument, with charts and coverage | Live app → **Catalogue public** |
+| Where the funnel's entry point sits, if it exists | Live app → **La porte d'entrée**, or `make cta-report` — placement only, never conversion |
 | Proof it is not a one-off script | `scripts/refresh_catalogue.py`, `ingest_runs`, and the freshness row on the catalogue page — *last checked* and *last changed* are separate on purpose |
 | Where an LLM is allowed to write | [`ADR-008`](docs/decisions/ADR-008-llm-text-labelling.md) — titles only, versioned in the database; no arithmetic |
 | How agents are stopped from over-claiming | [`ADR-009`](docs/decisions/ADR-009-data-quality-gate.md), `app/skills/metric_validation/` |
 | The working method | [`AGENTS.md`](AGENTS.md), `.cursor/rules/`, `.cursor/skills/` — plan → critic → test-writer → implement |
-| Whether it is tested | `make test` (312), `make eval` (pinned agent fixtures) |
+| Whether it is tested | `make test` (405), `make eval` (pinned agent fixtures) |
 
 ## Current status
 
-**Phase 16** — trustworthy automation (W1–W4 shipped) and the
-**En bref** landing page: the three-minute reading of the real catalogue, every
-number derived from the same live report as the full analysis.
+**Phase 18** — the funnel's public entry point: where the product link sits in the
+descriptions, whether it is visible, and whether anything could attribute a signup
+to it. Placement only, and the one reading here that needs no classifier.
 
 ```bash
 make install      # once (venv is mounted into app containers)
@@ -78,6 +91,7 @@ make up           # core stack (n8n optional — corporate Docker Hub often bloc
 make status
 make eval         # agent evaluation suite
 make public-report
+make cta-report   # where the funnel's entry point sits in the descriptions
 make refresh-loop # keep the catalogue current (every 15 min)
 # Dashboard: http://localhost:8501  (Catalogue public = real YouTube track)
 # API docs:  http://localhost:8000/docs
@@ -416,3 +430,37 @@ finding and a decision, under constraints that keep it honest.
       about a real person's finances
 - [x] `tests/dashboard/test_rewrites.py` — id-keyed pairing, thin-leader skipping,
       precedent resolution, and graceful degradation to fewer cards, never blank ones
+
+### Phase 18
+
+The four editorial readings ask what makes a video circulate. This one asks what
+happens after it does — and it is the only reading here that touches the top of
+the conversion funnel without inferring a single thing about conversion.
+
+- [x] `cta_analysis` skill — where the product link sits in a public description:
+      present or absent, above the fold or behind "plus", carrying a campaign
+      parameter or not. **Placement, never conversion**: it can say "no door
+      here", never "nobody came in"
+- [x] The product domain is **derived**, not configured — the most-linked domain
+      outside YouTube and the social platforms, returned with the sentence that
+      justifies it. The rejected candidates stay in the table on the page, because
+      an assumption nobody can check is a hidden assumption
+- [x] Only links YouTube actually makes clickable are counted (`http(s)` or a
+      `www.` prefix). A bare `domain.com` mid-sentence is text, and counting it
+      would inflate the number of doors
+- [x] Three attribution states, not two: a `go.` redirect or a shortener is
+      **opaque**, not untracked — it may append a campaign after the hop, and the
+      URL text cannot settle it. Folding the two together would manufacture a
+      finding
+- [x] Above the fold is counted in **rendered lines**, and the raw character
+      offset ships beside it — the threshold is an approximation of where YouTube
+      cuts, so the page also carries the median offset, which needs no threshold
+- [x] No classifier required, so this reading covers the whole ingested catalogue
+      rather than the labelled subset the reach index is restricted to
+- [x] **La porte d'entrée** page + `make cta-report`, and the ten most-watched
+      videos with no entry point — a query, not a list: it re-runs at every ingest
+- [x] `finalize()` in `dashboard/charts.py` ended on `.configure(background=...)`,
+      which **replaces** the config object rather than merging into it. Every
+      chart in the app had been silently dropping its axis, legend and view
+      styling on the last line of the builder. Background is now a top-level
+      chart property

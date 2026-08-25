@@ -16,6 +16,7 @@ from app.skills.catalogue_movement import (
     analyse_movement,
 )
 from app.skills.content_classification.schemas import CLASSIFICATION_VERSION
+from app.skills.cta_analysis import CtaReport, VideoDescription, analyse_cta
 from app.skills.public_signal_analysis import (
     DimensionStat,
     PublicSignalError,
@@ -255,6 +256,54 @@ def build_public_signal_report(
     return analyse_public_signals(
         load_public_signals(session, dataset_label=dataset_label, version=version)
     )
+
+
+def load_descriptions(
+    session: Session,
+    *,
+    dataset_label: str = "youtube_api",
+) -> list[VideoDescription]:
+    """Load every ingested video with its freshest public metric snapshot.
+
+    No classification join, and that is the point: a description carries a link
+    whether or not the classifier has labelled the video, so this reading covers
+    the whole catalogue instead of the classified subset the reach index is
+    restricted to. The two coverages differ, and the page says which one it is on.
+    """
+    statement = (
+        select(Video, VideoDailyMetric)
+        .join(VideoDailyMetric, VideoDailyMetric.video_id == Video.id)
+        .where(Video.dataset_label == dataset_label)
+        .order_by(Video.published_at)
+    )
+
+    descriptions: dict[str, VideoDescription] = {}
+    for video, metric in session.execute(statement):
+        existing = descriptions.get(video.youtube_video_id)
+        if existing is not None and existing.views >= metric.views:
+            continue
+        descriptions[video.youtube_video_id] = VideoDescription(
+            youtube_video_id=video.youtube_video_id,
+            title=video.title,
+            published_at=video.published_at,
+            duration_seconds=video.duration_seconds,
+            views=metric.views,
+            description=video.description or "",
+        )
+    return list(descriptions.values())
+
+
+def build_cta_report(
+    session: Session,
+    *,
+    dataset_label: str = "youtube_api",
+    primary_domain: str | None = None,
+) -> CtaReport | None:
+    """Load, then analyse. `None` on an empty catalogue — an ordinary fresh-deploy state."""
+    descriptions = load_descriptions(session, dataset_label=dataset_label)
+    if not descriptions:
+        return None
+    return analyse_cta(descriptions, primary_domain=primary_domain)
 
 
 SERIES_TITLE_MARKERS = (

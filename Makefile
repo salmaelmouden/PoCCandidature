@@ -27,6 +27,7 @@ help:
 	@echo "  make up-n8n      - core + n8n visual UI (:5678)"
 	@echo "  make n8n-import  - import weekly workflow into running n8n"
 	@echo "  make report      - CLI weekly markdown report"
+	@echo "  make cta-report  - where the funnel's entry point sits in the descriptions"
 	@echo "  make memo        - weekly French editorial memo (real catalogue), to stdout"
 	@echo "  make memo-write  - same, dated markdown under reports/"
 	@echo "  make memo-loop   - keep composing it weekly (long-lived container)"
@@ -123,6 +124,9 @@ classify:
 
 public-report:
 	$(PYTHON) scripts/public_signal_report.py
+
+cta-report:
+	$(PYTHON) scripts/cta_report.py
 
 refresh:
 	$(PYTHON) scripts/refresh_catalogue.py
