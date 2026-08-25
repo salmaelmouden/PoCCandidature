@@ -73,8 +73,13 @@ class CohortCoverage(BaseModel):
     videos_excluded: int
     cohorts_used: int
     cohorts_dropped: int
+    #: French, unlike the rest of this module, because it is the one field here
+    #: that is printed verbatim to a reader. All four surfaces that render it —
+    #: the catalogue page, the brief, the CLI table and the weekly memo — drop it
+    #: into French prose, so an English default made every one of them read as a
+    #: translation gap.
     excluded_reason: str = (
-        f"cohort (format × quarter) smaller than {MIN_COHORT_SIZE} videos"
+        f"cohorte (format × trimestre) de moins de {MIN_COHORT_SIZE} vidéos"
     )
 
 

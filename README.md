@@ -68,7 +68,7 @@ decided in [`ADR-009`](docs/decisions/ADR-009-data-quality-gate.md).
 
 ## Current status
 
-**Phase 16** — trustworthy automation (W1 + W2 shipped, W3 + W4 pending) and the
+**Phase 16** — trustworthy automation (W1–W3 shipped, W4 pending) and the
 **En bref** landing page: the three-minute reading of the real catalogue, every
 number derived from the same live report as the full analysis.
 
@@ -359,8 +359,22 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
       classification it rests on is named in the rendered text, not buried in it
 - [x] Navigation reordered and renamed: the real catalogue leads, the synthetic funnel
       sits under a group that says so before a reader clicks it
-- [ ] W3 — `memo_generation`: weekly French editorial memo over the real catalogue
-- [ ] W4 — `automation_runs` (migration `004`), scheduled n8n memo, run history
+- [x] W3 — `memo_generation`: the weekly French editorial memo over the real
+      catalogue. Composes, never computes — every figure arrives from
+      `public_signal_analysis` / `catalogue_movement`, so the memo cannot disagree
+      with the page describing the same week. Two **deterministic post-conditions**
+      run before it is written or returned, because a bad memo looks exactly like a
+      good one once it is in an inbox:
+      `undeclared_figures` names any number the composer never emitted (a hand-typed
+      "environ 40 %" is rejected), and `funnel_vocabulary_leaks` confines signup and
+      conversion vocabulary to the one section that exists to say those things are
+      invisible from outside a channel. No recommendation section, on purpose:
+      recommendations are reasoning (ADR-002), and a scheduled delivery must not
+      depend on a model call. Absence degrades into a sentence, never a zero — no
+      second snapshot, one-day resolution, no refresh run, and thin dimension rows
+      each say so. `make memo` / `memo-write` / `memo-loop`,
+      `POST /api/memo/editorial`, dated markdown under `reports/`
+- [ ] W4 — `automation_runs` (migration `005`), scheduled n8n memo, run history
 
 ### Phase 17
 

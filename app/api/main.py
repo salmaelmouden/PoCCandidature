@@ -7,7 +7,7 @@ import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
 
 # Enable logging
@@ -53,12 +53,6 @@ def root() -> RootResponse:
 def health() -> HealthResponse:
     """Health check endpoint - read-only, no DB access."""
     return HealthResponse()
-
-
-@app.get("/")
-def root():
-    """Simple test endpoint with no database access."""
-    return {"message": "API is running", "version": "0.9.0"}
 
 
 # Import heavy dependencies only when needed
@@ -117,6 +111,75 @@ try:
             channel=report.channel,
             markdown=report.markdown,
             provenance_note=report.provenance_note,
+            saved_path=saved,
+            generated_at=datetime.now(timezone.utc),
+        )
+
+    class EditorialMemoResponse(BaseModel):
+        title: str
+        generated_on: date
+        period_start: date
+        period_end: date
+        markdown: str
+        provenance: str
+        saved_path: str | None = None
+        generated_at: datetime
+
+    @app.post("/api/memo/editorial", response_model=EditorialMemoResponse)
+    def editorial_memo(
+        save: bool = Query(default=True, description="Write markdown under ./reports/"),
+        candidate_limit: int = Query(default=5, ge=1, le=20),
+    ) -> EditorialMemoResponse:
+        """Compose the weekly French editorial memo over the real catalogue.
+
+        Both post-conditions run before the memo leaves this process. A memo
+        carrying a figure the composer never emitted, or funnel vocabulary
+        outside the section that disowns it, is a 500 rather than a 200 — it
+        would otherwise reach a scheduled delivery looking exactly like a sound
+        one, which is the failure mode this whole track exists to prevent.
+        """
+        from app.services.memo import build_editorial_memo, write_memo
+        from app.skills.memo_generation import (
+            MemoError,
+            funnel_vocabulary_leaks,
+            undeclared_figures,
+        )
+
+        logger.info(f"Editorial memo requested: candidate_limit={candidate_limit}")
+        try:
+            with session_scope() as session:
+                memo = build_editorial_memo(session, candidate_limit=candidate_limit)
+        except MemoError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
+
+        undeclared = undeclared_figures(memo)
+        leaks = funnel_vocabulary_leaks(memo)
+        if undeclared or leaks:
+            logger.error(
+                "memo_rejected undeclared=%s leaks=%s", undeclared, leaks
+            )
+            raise HTTPException(
+                status_code=500,
+                detail={
+                    "message": "Memo failed its post-conditions and was not emitted",
+                    "undeclared_figures": list(undeclared),
+                    "funnel_vocabulary_leaks": [
+                        {"section": key, "term": term} for key, term in leaks
+                    ],
+                },
+            )
+
+        saved: str | None = None
+        if save:
+            saved = str(write_memo(memo, directory=REPORTS_DIR))
+
+        return EditorialMemoResponse(
+            title=memo.title,
+            generated_on=memo.generated_on,
+            period_start=memo.period_start,
+            period_end=memo.period_end,
+            markdown=memo.markdown,
+            provenance=memo.provenance,
             saved_path=saved,
             generated_at=datetime.now(timezone.utc),
         )

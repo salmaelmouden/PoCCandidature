@@ -91,6 +91,49 @@ HOOK_DEFINITIONS: dict[HookType, str] = {
 }
 
 
+#: Display labels, kept beside the vocabulary they name rather than in whichever
+#: surface first needed them. The dashboard and the weekly memo both render these
+#: keys in French, and two copies of the mapping would drift the moment a label is
+#: reworded in one place — with the two surfaces then disagreeing about what the
+#: same classifier said.
+TOPIC_FR: dict[str, str] = {
+    ContentTopic.ETF_GESTION_PASSIVE: "ETF / gestion passive",
+    ContentTopic.BOURSE_ACTIONS: "Bourse & actions",
+    ContentTopic.EDUCATION_FINANCIERE: "Éducation financière",
+    ContentTopic.RETRAITE: "Retraite",
+    ContentTopic.IMMOBILIER: "Immobilier",
+    ContentTopic.INTERVIEW: "Interview",
+    ContentTopic.MACRO_ACTUALITE: "Macro & actualité",
+    ContentTopic.PORTRAIT_HISTOIRE: "Portrait & récit",
+    ContentTopic.CRYPTO: "Crypto",
+    ContentTopic.FISCALITE: "Fiscalité",
+    ContentTopic.EPARGNE_PLACEMENTS: "Épargne & placements",
+    ContentTopic.PRODUIT_FINARY: "Produit",
+    ContentTopic.ENTREPRENEURIAT: "Entrepreneuriat",
+}
+
+HOOK_FR: dict[str, str] = {
+    HookType.AUTORITE: "Autorité",
+    HookType.PROMESSE: "Promesse",
+    HookType.CURIOSITE: "Curiosité",
+    HookType.QUESTION: "Question",
+    HookType.CHIFFRE: "Chiffre",
+    HookType.RECIT: "Récit",
+    HookType.CONTRARIAN: "Contre-pied",
+    HookType.ACTUALITE: "Actualité",
+}
+
+
+def label_fr(value: str) -> str:
+    """French label for a topic or hook key, falling back to the key itself.
+
+    The fallback matters: the classifier is versioned and its vocabulary can grow,
+    so an unmapped value must still render as something readable rather than
+    raising in the middle of a page or a scheduled memo.
+    """
+    return TOPIC_FR.get(value) or HOOK_FR.get(value) or value
+
+
 class VideoToClassify(BaseModel):
     """One classification input — title only, by design (see README)."""
 

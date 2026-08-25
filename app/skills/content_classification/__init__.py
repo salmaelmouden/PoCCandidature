@@ -9,11 +9,14 @@ from app.skills.content_classification.classifier import (
 )
 from app.skills.content_classification.schemas import (
     CLASSIFICATION_VERSION,
+    HOOK_FR,
+    TOPIC_FR,
     ClassifyContentResult,
     ContentTopic,
     HookType,
     VideoClassificationResult,
     VideoToClassify,
+    label_fr,
 )
 from app.skills.content_classification.skill import (
     ClassifyContentRequest,
@@ -22,6 +25,8 @@ from app.skills.content_classification.skill import (
 
 __all__ = [
     "CLASSIFICATION_VERSION",
+    "HOOK_FR",
+    "TOPIC_FR",
     "ClassificationError",
     "Classifier",
     "ClassifyContentRequest",
@@ -34,4 +39,5 @@ __all__ = [
     "VideoToClassify",
     "build_classifier",
     "classify_channel_content",
+    "label_fr",
 ]
