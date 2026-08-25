@@ -2,11 +2,69 @@
 
 AI-native growth analytics, decision support, and automation for content-driven acquisition.
 
+**▶ Live — <https://poccandidature-production.up.railway.app>**  
+The landing page is the three-minute read. Everything else in this repository is the
+evidence behind it.
+
 > Independent portfolio project, **not affiliated with Finary**. **Hybrid data:** labelled
 > synthetic funnel metrics + real **public** YouTube catalogue metadata via the official
 > Data API (read-only). No private APIs, no internal analytics, no logos, no proprietary
 > datasets. Public view/like/comment counts only — signups and conversion are not observable
 > from outside a channel and are never inferred.
+
+## What it found
+
+Four readings of a public YouTube catalogue of ~950 videos, each ending in the editorial
+move it implies. The figures are deliberately not repeated here: they are derived live from
+the catalogue on every render, and a number copied into a README is a number that goes
+quietly wrong.
+
+1. **The format decides the hook, not the other way round.** Authority wins at length,
+   the contrarian angle wins in Shorts, and the most-used hook in the whole catalogue —
+   the question — wins in neither. Changing it costs nothing: same subject, same shoot,
+   same edit, different title for the destination format.
+2. **Narrative needs length.** The same topic ranks near the top in long form and near the
+   bottom as a Short. Narrative is the register that demands the least prior financial
+   literacy, so serving it short strips it of what makes it work.
+3. **The largest editorial bet is the least-travelled topic.** A quarter of the long-form
+   catalogue sits on the subject that circulates least. This one recommends **nothing**:
+   if that volume buys audience qualification rather than reach, the choice is sound, and
+   the metric that settles it is not visible from outside.
+4. **The catalogue and the premium tier do not look at each other.** Subjects that
+   presuppose existing capital hold a small share of production next to entry-level ones.
+   A claim about **production mix**, never about audience — who watches what is not
+   observable externally, and the topic classification it rests on is named on the page
+   rather than buried in it.
+
+Three of the four name a metric only internal data can supply. None infers signups or
+conversion from public signals, because neither is observable from outside a channel.
+
+## The bug that shaped the design
+
+An `int()` truncation in the synthetic generator floored the funnel's terminal stage to
+near zero. The chain read that as a 100 % dropoff, the strategist agent turned it into a
+confident `[P0] Fix Premium leak` with a full action plan, and the automation shipped it
+every Monday. The evaluation suite was green throughout — it had never tested the agents
+on a degenerate input.
+
+The fix was not a better prompt. A deterministic skill (`metric_validation`) now qualifies
+metrics before an agent sees them, and a deterministic post-condition downgrades any P0/P1
+aimed at a stage a warning covers. The correction never depends on the model complying, and
+it is testable without one. Written up in
+[`docs/plans/phase-16-trustworthy-automation.md`](docs/plans/phase-16-trustworthy-automation.md),
+decided in [`ADR-009`](docs/decisions/ADR-009-data-quality-gate.md).
+
+## Reading this repo in three minutes
+
+| If you want | Go to |
+|---|---|
+| The findings | Live app → **En bref** |
+| The full argument, with charts and coverage | Live app → **Catalogue public** |
+| Proof it is not a one-off script | `scripts/refresh_catalogue.py`, `ingest_runs`, and the freshness row on the catalogue page — *last checked* and *last changed* are separate on purpose |
+| Where an LLM is allowed to write | [`ADR-008`](docs/decisions/ADR-008-llm-text-labelling.md) — titles only, versioned in the database; no arithmetic |
+| How agents are stopped from over-claiming | [`ADR-009`](docs/decisions/ADR-009-data-quality-gate.md), `app/skills/metric_validation/` |
+| The working method | [`AGENTS.md`](AGENTS.md), `.cursor/rules/`, `.cursor/skills/` — plan → critic → test-writer → implement |
+| Whether it is tested | `make test` (312), `make eval` (pinned agent fixtures) |
 
 ## Current status
 
