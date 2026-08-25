@@ -291,10 +291,14 @@ Plan → critic → test-writer → implement. See `AGENTS.md`.
 - [x] W2 — `metric_validation` skill + a deterministic post-condition that downgrades
       any P0/P1 aimed at a stage a warning covers, so the fix never depends on the
       model obeying a prompt (ADR-009). Eval case + fixture for the degenerate funnel
-- [x] **En bref** landing page (`dashboard/views/brief.py`) — three readings of the
+- [x] **En bref** landing page (`dashboard/views/brief.py`) — four readings of the
       real catalogue with the move each implies, derived through `dashboard/brief.py`
       from the same live report the full page reads, so the summary cannot drift from
       the analysis it summarises
+- [x] Production mix read against the business model: what share of the catalogue
+      treats subjects that presuppose capital. A **mix** claim, never an audience
+      one — who watches is not observable from outside a channel — and the topic
+      classification it rests on is named in the rendered text, not buried in it
 - [x] Navigation reordered and renamed: the real catalogue leads, the synthetic funnel
       sits under a group that says so before a reader clicks it
 - [ ] W3 — `memo_generation`: weekly French editorial memo over the real catalogue
