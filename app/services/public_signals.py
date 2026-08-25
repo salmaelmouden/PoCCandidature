@@ -17,9 +17,14 @@ from app.skills.catalogue_movement import (
 )
 from app.skills.content_classification.schemas import CLASSIFICATION_VERSION
 from app.skills.public_signal_analysis import (
+    DimensionStat,
+    PublicSignalError,
     PublicSignalReport,
     PublicVideoSignal,
+    VideoFormat,
+    aggregate_by,
     analyse_public_signals,
+    compute_reach_index,
 )
 
 FALLBACK_BACKEND = "keyword_fallback"
@@ -249,4 +254,134 @@ def build_public_signal_report(
     """Load, then analyse. All arithmetic lives in the deterministic skill."""
     return analyse_public_signals(
         load_public_signals(session, dataset_label=dataset_label, version=version)
+    )
+
+
+SERIES_TITLE_MARKERS = (
+    "analyse de patrimoine",
+    "présentation de patrimoine",
+    "présentation de portefeuille",
+)
+"""How the recurring wealth-teardown series names itself.
+
+Matched on the title because nothing in the public API exposes a playlist or a
+series field. The convention is the channel's own and it is stable across three
+years, but it is still a convention: a future episode that drops the suffix
+leaves the series silently. That is why the page shows the matched count.
+"""
+
+MIN_LONG_SECONDS = 480
+"""Floor for "genuinely long-form", well above the 60 s Shorts threshold.
+
+`SHORT_MAX_SECONDS` splits the catalogue into two products, but it leaves a band
+of 61–120 s videos on the long side that are Shorts in everything but duration.
+An editorial recommendation about long-form titling should not be argued on
+them, so this page sets a higher bar than the report does.
+"""
+
+
+@dataclass(frozen=True)
+class IndexedVideo:
+    """One video with its cohort-normalised reach index attached."""
+
+    signal: PublicVideoSignal
+    reach_index: float
+
+
+@dataclass(frozen=True)
+class TitleEvidence:
+    """Everything the title-rewrite page reads, computed in one pass.
+
+    Both hook rankings are carried because they disagree, and the disagreement
+    is the point: the hook that wins across all long-form videos is not the hook
+    that wins inside the recurring series. A page that showed only one of them
+    would license a rewrite rule the data does not support.
+    """
+
+    by_hook_long: list[DimensionStat]
+    by_hook_series: list[DimensionStat]
+    series_videos: int
+    candidates: list[IndexedVideo]
+    exemplars: list[IndexedVideo]
+    longs: list[IndexedVideo]
+
+    def by_id(self, youtube_video_id: str) -> IndexedVideo | None:
+        """Look up any long-form video, so a precedent can cite a live index.
+
+        The rewrite page names specific earlier videos as evidence. Reading
+        their index from here rather than restating it keeps those citations
+        from going stale the way a copied number would.
+        """
+        return next(
+            (item for item in self.longs if item.signal.youtube_video_id == youtube_video_id),
+            None,
+        )
+
+
+def _is_series(signal: PublicVideoSignal) -> bool:
+    lowered = signal.title.lower()
+    return any(marker in lowered for marker in SERIES_TITLE_MARKERS)
+
+
+def build_title_evidence(
+    session: Session,
+    *,
+    dataset_label: str = "youtube_api",
+    version: str = CLASSIFICATION_VERSION,
+    hook: str = "question",
+    limit: int = 10,
+) -> TitleEvidence | None:
+    """Evidence for the title-rewrite recommendation. `None` on an empty catalogue.
+
+    The candidate list is *derived*, never curated: long-form, carrying `hook`,
+    below its own cohort median, worst first. Which videos appear therefore
+    changes as the catalogue moves — a rewrite proposal that no longer sits in
+    the bottom of the distribution stops being shown, rather than sitting on the
+    page asserting a problem that has gone away.
+    """
+    signals = load_public_signals(session, dataset_label=dataset_label, version=version)
+    if not signals:
+        return None
+    try:
+        index, _ = compute_reach_index(signals)
+    except PublicSignalError:
+        return None
+
+    longs = [
+        IndexedVideo(signal=signal, reach_index=index[signal.youtube_video_id])
+        for signal in signals
+        if signal.video_format is VideoFormat.LONG and signal.youtube_video_id in index
+    ]
+    if not longs:
+        return None
+
+    series = [item for item in longs if _is_series(item.signal)]
+
+    candidates = sorted(
+        (
+            item
+            for item in longs
+            if item.signal.hook_type == hook
+            and item.signal.duration_seconds >= MIN_LONG_SECONDS
+            and item.reach_index < 1.0
+        ),
+        key=lambda item: item.reach_index,
+    )[:limit]
+
+    # Shown beside the rewrites as the channel's own proof: the titles this very
+    # series already performs best with. A proposal is easier to judge against a
+    # precedent than against a principle.
+    exemplars = sorted(series, key=lambda item: -item.reach_index)[:5]
+
+    return TitleEvidence(
+        by_hook_long=aggregate_by(
+            [item.signal for item in longs], index, "hook_type"
+        ),
+        by_hook_series=aggregate_by(
+            [item.signal for item in series], index, "hook_type"
+        ),
+        series_videos=len(series),
+        candidates=candidates,
+        exemplars=exemplars,
+        longs=longs,
     )
