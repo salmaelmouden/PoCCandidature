@@ -6,7 +6,6 @@
   },
   "deploy": {
     "startCommand": "exec python scripts/generate_editorial_memo.py --write",
-    "cronSchedule": "0 7 * * 1",
     "restartPolicyType": "NEVER"
   }
 }
