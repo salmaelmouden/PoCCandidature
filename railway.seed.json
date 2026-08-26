@@ -5,7 +5,7 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "exec python scripts/seed_synthetic_data.py --reset",
+    "startCommand": "python scripts/seed_synthetic_data.py --reset",
     "restartPolicyType": "NEVER"
   }
 }
