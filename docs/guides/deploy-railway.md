@@ -30,6 +30,39 @@ never hardcode a port in a start command. The start commands in `railway.json` a
 `railway.api.json` all read `${PORT:-…}`, and the `Dockerfile` deliberately has no
 `EXPOSE` line — a stale one is what makes Railway target the wrong port.
 
+## A `startCommand` is not run in a shell
+
+Railway splits the start command into `argv` and executes it directly. Shell
+syntax in there is not interpreted — it is taken literally, as a program name or
+an argument. A command that begins with `exec` fails the deploy at container
+creation with:
+
+```
+The executable `exec` could not be found.
+```
+
+`exec` is a shell builtin, so there is nothing to find. The same applies to
+`${PORT:-8000}`, `&&`, and `|`: without a shell they are literal strings.
+
+Services created before this behaviour changed still wrap the command in a shell,
+which is why `railway.refresher.json` keeps deploying with an `exec` prefix while
+`railway.memo.json` — a service created afterwards — failed on the identical
+prefix. Do not read a green refresher as proof the form is correct; it is proof
+that service is still on the old runtime.
+
+Two ways to write it, and the choice depends on whether shell syntax is needed:
+
+- **No shell syntax** — drop `exec`, name the program directly. The process then
+  runs as PID 1 and receives `SIGTERM` itself, which is what the memo's
+  finish-the-current-cycle handler relies on:
+  `python scripts/generate_editorial_memo.py --write`
+- **Shell syntax required** — ask for a shell explicitly, and keep `exec` inside
+  it so the real process still replaces it and stays PID 1:
+  `sh -c "exec uvicorn app.api.main:app --host 0.0.0.0 --port ${PORT:-8000}"`
+
+The `Dockerfile` `CMD` is unaffected: it already spells out `["sh", "-c", …]`,
+which is why the dashboard's `alembic upgrade head && …` chain works.
+
 ## 0. Before you start
 
 - Push the branch to GitHub — Railway deploys from the repo.
